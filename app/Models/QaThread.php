@@ -48,7 +48,7 @@ class QaThread extends Model
     }
 
     /**
-     * @return HasMany<Replies, $this>
+     * @return HasMany<QaReply, $this>
      */
     public function replies(): HasMany
     {
