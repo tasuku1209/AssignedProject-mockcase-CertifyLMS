@@ -85,10 +85,18 @@ class QaThreadPolicy
     }
 
     /**
-     * 自分の質問を削除できるか。
+     * 質問を削除できるか。
+     *
+     * - admin: 任意の質問を削除できる
+     * - student: 自分の質問を削除できる
+     * - coach: 削除できない
      */
     public function delete(User $auth, QaThread $thread): bool
     {
+        if ($auth->role === UserRole::Admin) {
+            return true;
+        }
+
         return $auth->role === UserRole::Student
             && $auth->id === $thread->user_id;
     }

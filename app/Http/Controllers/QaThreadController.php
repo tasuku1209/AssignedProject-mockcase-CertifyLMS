@@ -7,11 +7,14 @@ namespace App\Http\Controllers;
 use App\Enums\QaThreadStatus;
 use App\Http\Requests\QaThread\IndexRequest;
 use App\Http\Requests\QaThread\StoreRequest;
+use App\Http\Requests\QaThread\UpdateRequest;
 use App\Models\Certification;
 use App\Models\QaThread;
+use App\UseCases\QaThread\DestroyAction;
 use App\UseCases\QaThread\IndexAction;
 use App\UseCases\QaThread\ShowAction;
 use App\UseCases\QaThread\StoreAction;
+use App\UseCases\QaThread\UpdateAction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -72,5 +75,34 @@ class QaThreadController extends Controller
         return redirect()
             ->route('qa-board.show', $thread)
             ->with('success', '質問を投稿しました。');
+    }
+
+    public function edit(QaThread $thread): View
+    {
+        $this->authorize('update', $thread);
+
+        return view('qa-thread.edit', [
+            'thread' => $thread,
+        ]);
+    }
+
+    public function update(QaThread $thread, UpdateRequest $request, UpdateAction $action): RedirectResponse
+    {
+        $action($thread, $request->validated());
+
+        return redirect()
+            ->route('qa-board.show', $thread)
+            ->with('success', '質問を更新しました。');
+    }
+
+    public function destroy(QaThread $thread, DestroyAction $action): RedirectResponse
+    {
+        $this->authorize('delete', $thread);
+
+        $action($thread, request()->user());
+
+        return redirect()
+            ->route('qa-board.index')
+            ->with('success', '質問を削除しました。');
     }
 }
