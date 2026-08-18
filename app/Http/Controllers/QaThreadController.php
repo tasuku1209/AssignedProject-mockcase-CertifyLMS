@@ -12,8 +12,10 @@ use App\Models\Certification;
 use App\Models\QaThread;
 use App\UseCases\QaThread\DestroyAction;
 use App\UseCases\QaThread\IndexAction;
+use App\UseCases\QaThread\ResolveAction;
 use App\UseCases\QaThread\ShowAction;
 use App\UseCases\QaThread\StoreAction;
+use App\UseCases\QaThread\UnresolveAction;
 use App\UseCases\QaThread\UpdateAction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -104,5 +106,27 @@ class QaThreadController extends Controller
         return redirect()
             ->route('qa-board.index')
             ->with('success', '質問を削除しました。');
+    }
+
+    public function resolve(QaThread $thread, ResolveAction $action): RedirectResponse
+    {
+        $this->authorize('resolve', $thread);
+
+        $action($thread);
+
+        return redirect()
+            ->route('qa-board.show', $thread)
+            ->with('success', '質問を解決済みにしました。');
+    }
+
+    public function unresolve(QaThread $thread, UnresolveAction $action): RedirectResponse
+    {
+        $this->authorize('unresolve', $thread);
+
+        $action($thread);
+
+        return redirect()
+            ->route('qa-board.show', $thread)
+            ->with('success', '質問を未解決に戻しました。');
     }
 }
