@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Enums\CertificationStatus;
+use App\Enums\EnrollmentStatus;
 use App\Enums\UserRole;
 use App\Models\Certification;
 use App\Models\QaThread;
@@ -45,11 +46,19 @@ class QaThreadPolicy
             return $this->assignedCoach($auth, $thread->certification);
         }
 
-        if ($auth->role === UserRole::Student) {
-            return $thread->certification?->status === CertificationStatus::Published;
+        if ($auth->role !== UserRole::Student) {
+            return false;
         }
 
-        return false;
+        // スレッドの資格が公開中であること
+        if ($thread->certification?->status !== CertificationStatus::Published) {
+            return false;
+        }
+
+        // 何らかの資格を現在受講中であること
+        return $auth->enrollments()
+            ->where('status', EnrollmentStatus::Learning->value)
+            ->exists();
     }
 
     /**

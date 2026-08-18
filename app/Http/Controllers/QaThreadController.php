@@ -7,7 +7,9 @@ namespace App\Http\Controllers;
 use App\Enums\QaThreadStatus;
 use App\Http\Requests\QaThread\IndexRequest;
 use App\Models\Certification;
+use App\Models\QaThread;
 use App\UseCases\QaThread\IndexAction;
+use App\UseCases\QaThread\ShowAction;
 use Illuminate\View\View;
 
 class QaThreadController extends Controller
@@ -32,6 +34,15 @@ class QaThreadController extends Controller
                 'status' => $validated['status'] ?? '',
                 'certification_id' => $validated['certification_id'] ?? '',
             ],
+        ]);
+    }
+
+    public function show(QaThread $thread, ShowAction $action): View
+    {
+        $this->authorize('view', $thread);
+
+        return view('qa-thread.show', [
+            'thread' => $action($thread),
         ]);
     }
 }
