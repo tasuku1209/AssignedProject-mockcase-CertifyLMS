@@ -6,10 +6,13 @@ namespace App\Http\Controllers;
 
 use App\Enums\QaThreadStatus;
 use App\Http\Requests\QaThread\IndexRequest;
+use App\Http\Requests\QaThread\StoreRequest;
 use App\Models\Certification;
 use App\Models\QaThread;
 use App\UseCases\QaThread\IndexAction;
 use App\UseCases\QaThread\ShowAction;
+use App\UseCases\QaThread\StoreAction;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class QaThreadController extends Controller
@@ -28,7 +31,9 @@ class QaThreadController extends Controller
 
         return view('qa-thread.index', [
             'threads' => $threads,
-            'certifications' => Certification::published()->get(),
+            'certifications' => Certification::published()
+                ->orderByDesc('updated_at')
+                ->get(),
             'filters' => [
                 'keyword' => $validated['keyword'] ?? '',
                 'status' => $validated['status'] ?? '',
@@ -44,5 +49,28 @@ class QaThreadController extends Controller
         return view('qa-thread.show', [
             'thread' => $action($thread),
         ]);
+    }
+
+    public function create(): View
+    {
+        $this->authorize('create', QaThread::class);
+
+        return view('qa-thread.create', [
+            'certifications' => Certification::published()
+                ->orderByDesc('updated_at')
+                ->get(),
+        ]);
+    }
+
+    public function store(StoreRequest $request, StoreAction $action): RedirectResponse
+    {
+        $thread = $action(
+            $request->user(),
+            $request->validated()
+        );
+
+        return redirect()
+            ->route('qa-board.show', $thread)
+            ->with('success', '質問を投稿しました。');
     }
 }
