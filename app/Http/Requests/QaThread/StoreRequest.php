@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\QaThread;
 
+use App\Enums\CertificationStatus;
 use App\Models\QaThread;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -25,7 +26,7 @@ class StoreRequest extends FormRequest
                 'required',
                 'string',
                 Rule::exists('certifications', 'id')
-                    ->where(fn ($query) => $query->where('status', 'published')),
+                    ->where('status', CertificationStatus::Published->value),
             ],
             'title' => [
                 'required',
