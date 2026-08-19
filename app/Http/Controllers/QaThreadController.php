@@ -131,8 +131,12 @@ class QaThreadController extends Controller
 
         $action($thread, request()->user());
 
+        $indexRoute = request()->routeIs('admin.*')
+            ? 'admin.qa-board.index'
+            : 'qa-board.index';
+
         return redirect()
-            ->route('qa-board.index')
+            ->route($indexRoute)
             ->with('success', '質問を削除しました。');
     }
 

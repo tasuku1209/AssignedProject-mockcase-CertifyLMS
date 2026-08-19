@@ -49,6 +49,10 @@ class QaReplyPolicy
      */
     public function delete(User $auth, QaReply $reply): bool
     {
+        if ($auth->role === UserRole::Admin) {
+            return true;
+        }
+
         return in_array($auth->role, [
             UserRole::Student,
             UserRole::Coach,
