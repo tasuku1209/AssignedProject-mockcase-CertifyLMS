@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\QaThreadStatus;
+use App\Http\Requests\QaThread\IndexAsAdminRequest;
 use App\Http\Requests\QaThread\IndexRequest;
 use App\Http\Requests\QaThread\StoreRequest;
 use App\Http\Requests\QaThread\UpdateRequest;
@@ -12,6 +13,7 @@ use App\Models\Certification;
 use App\Models\QaThread;
 use App\UseCases\QaThread\DestroyAction;
 use App\UseCases\QaThread\IndexAction;
+use App\UseCases\QaThread\IndexAsAdminAction;
 use App\UseCases\QaThread\ResolveAction;
 use App\UseCases\QaThread\ShowAction;
 use App\UseCases\QaThread\StoreAction;
@@ -44,6 +46,32 @@ class QaThreadController extends Controller
                 'status' => $validated['status'] ?? '',
                 'certification_id' => $validated['certification_id'] ?? '',
             ],
+        ]);
+    }
+
+    public function indexAsAdmin(IndexAsAdminRequest $request, IndexAsAdminAction $action): View
+    {
+        $validated = $request->validated();
+
+        $threads = $action(
+            keyword: $validated['keyword'] ?? null,
+            status: isset($validated['status'])
+                ? QaThreadStatus::from($validated['status'])
+                : null,
+            certificationId: $validated['certification_id'] ?? null,
+        );
+
+        return view('qa-thread.index', [
+            'threads' => $threads,
+            'certifications' => Certification::query()
+                ->orderByDesc('updated_at')
+                ->get(),
+            'filters' => [
+                'keyword' => $validated['keyword'] ?? '',
+                'status' => $validated['status'] ?? '',
+                'certification_id' => $validated['certification_id'] ?? '',
+            ],
+            'indexRoute' => 'admin.qa-board.index',
         ]);
     }
 
