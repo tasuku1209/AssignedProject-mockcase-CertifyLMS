@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\CertificationStatus;
 use App\Enums\QaThreadStatus;
 use App\Http\Requests\QaThread\IndexAsAdminRequest;
 use App\Http\Requests\QaThread\IndexRequest;
@@ -46,6 +47,7 @@ class QaThreadController extends Controller
                 'status' => $validated['status'] ?? '',
                 'certification_id' => $validated['certification_id'] ?? '',
             ],
+            'publishedStatus' => CertificationStatus::Published,
         ]);
     }
 
@@ -72,6 +74,7 @@ class QaThreadController extends Controller
                 'certification_id' => $validated['certification_id'] ?? '',
             ],
             'indexRoute' => 'admin.qa-board.index',
+            'publishedStatus' => CertificationStatus::Published,
         ]);
     }
 

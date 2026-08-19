@@ -29,16 +29,17 @@ class QaReplyController extends Controller
             ->with('success', '回答を投稿しました。');
     }
 
-    public function edit(QaReply $reply): View
+    public function edit(QaThread $thread, QaReply $reply): View
     {
         $this->authorize('update', $reply);
 
         return view('qa-thread.reply-edit', [
+            'thread' => $thread,
             'reply' => $reply,
         ]);
     }
 
-    public function update(QaReply $reply, UpdateRequest $request, UpdateAction $action): RedirectResponse
+    public function update(QaThread $thread, QaReply $reply, UpdateRequest $request, UpdateAction $action): RedirectResponse
     {
         $action(
             reply: $reply,
@@ -46,15 +47,13 @@ class QaReplyController extends Controller
         );
 
         return redirect()
-            ->route('qa-board.show', $reply->qaThread)
+            ->route('qa-board.show', $thread)
             ->with('success', '回答を更新しました。');
     }
 
-    public function destroy(QaReply $reply, DestroyAction $action): RedirectResponse
+    public function destroy(QaThread $thread, QaReply $reply, DestroyAction $action): RedirectResponse
     {
         $this->authorize('delete', $reply);
-
-        $thread = $reply->qaThread;
 
         $action($reply);
 

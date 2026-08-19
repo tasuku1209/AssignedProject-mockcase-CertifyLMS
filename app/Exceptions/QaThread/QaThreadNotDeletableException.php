@@ -15,6 +15,6 @@ final class QaThreadNotDeletableException extends ConflictHttpException
 {
     public function __construct(?\Throwable $previous = null)
     {
-        parent::__construct('この質問は削除できません。', $previous);
+        parent::__construct('未回答状態の質問のみ削除できます。', $previous);
     }
 }
