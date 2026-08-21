@@ -41,12 +41,12 @@ class MeetingPackController extends Controller
         ]);
     }
 
-    public function show(MeetingPack $meetingPack, ShowAction $action): View
+    public function show(MeetingPack $plan, ShowAction $action): View
     {
-        $this->authorize('view', $meetingPack);
+        $this->authorize('view', $plan);
 
         return view('meeting-pack.management.show', [
-            'plan' => $action($meetingPack),
+            'plan' => $action($plan),
         ]);
     }
 
@@ -59,45 +59,45 @@ class MeetingPackController extends Controller
 
     public function store(StoreRequest $request, StoreAction $action): RedirectResponse
     {
-        $meetingPack = $action($request->user(), $request->validated());
+        $plan = $action($request->user(), $request->validated());
 
         return redirect()
-            ->route('admin.meeting-packs.show', $meetingPack)
+            ->route('admin.meeting-packs.show', $plan)
             ->with('success', '面談パックを作成しました。');
     }
 
-    public function edit(MeetingPack $meetingPack): View
+    public function edit(MeetingPack $plan): View
     {
-        $this->authorize('update', $meetingPack);
+        $this->authorize('update', $plan);
 
         return view('meeting-pack.management.edit', [
-            'plan' => $meetingPack,
+            'plan' => $plan,
         ]);
     }
 
     public function update(
-        MeetingPack $meetingPack,
+        MeetingPack $plan,
         UpdateRequest $request,
         UpdateAction $action
     ): RedirectResponse {
         $action(
-            $meetingPack,
+            $plan,
             $request->user(),
             $request->validated()
         );
 
         return redirect()
-            ->route('admin.meeting-packs.show', $meetingPack)
+            ->route('admin.meeting-packs.show', $plan)
             ->with('success', '面談パックを更新しました。');
     }
 
     public function destroy(
-        MeetingPack $meetingPack,
+        MeetingPack $plan,
         DestroyAction $action
     ): RedirectResponse {
-        $this->authorize('delete', $meetingPack);
+        $this->authorize('delete', $plan);
 
-        $action($meetingPack);
+        $action($plan);
 
         return redirect()
             ->route('admin.meeting-packs.index')
