@@ -41,12 +41,15 @@ final class QaReplySeeder extends Seeder
             return;
         }
 
-        $demoStudent = User::query()
+        $demoStudents = User::query()
             ->where('role', UserRole::Student->value)
             ->where('status', UserStatus::InProgress->value)
-            ->where('email', '!=', 'student@certify-lms.test')
-            ->orderBy('created_at')
-            ->first();
+            ->whereNotIn('email', [
+                'student@certify-lms.test',
+                'student-noquota@certify-lms.test',
+            ])
+            ->limit(8)
+            ->get();
 
         $coach = User::query()
             ->where('email', 'coach@certify-lms.test')
@@ -54,7 +57,7 @@ final class QaReplySeeder extends Seeder
 
         $this->seedCoachReplies($coach, $threads);
         $this->seedFixedStudentReplies($fixedStudent, $threads);
-        $this->seedDemoStudentReplies($demoStudent, $threads);
+        $this->seedDemoStudentReplies($demoStudents, $threads);
     }
 
     /**
@@ -78,19 +81,15 @@ final class QaReplySeeder extends Seeder
     }
 
     /**
-     * 固定受講生の質問へ回答を投入する。
+     * 全質問へ回答を投入する。
      *
      * 3件に1件は回答なし、それ以外は1件の回答を投入する。
      *
      * @param Collection<int, QaThread> $threads
      */
-    private function seedFixedStudentReplies(User $student, $threads): void
+    private function seedFixedStudentReplies(User $student, Collection $threads): void
     {
-        $studentThreads = $threads
-            ->where('user_id', $student->id)
-            ->values();
-
-        foreach ($studentThreads as $index => $thread) {
+        foreach ($threads as $index => $thread) {
             if ($index % 3 === 0) {
                 continue;
             }
@@ -100,20 +99,16 @@ final class QaReplySeeder extends Seeder
     }
 
     /**
-     * デモ受講生の質問へ回答を投入する。
+     * 全質問へ回答を投入する。
      *
      * 固定受講生と同じく3件に1件をスキップする。
      * それ以外は1〜3件の回答をランダムに投入する。
      *
      * @param Collection<int, QaThread> $threads
      */
-    private function seedDemoStudentReplies(User $student, $threads): void
+    private function seedDemoStudentReplies(Collection $students, Collection $threads): void
     {
-        $studentThreads = $threads
-            ->where('user_id', $student->id)
-            ->values();
-
-        foreach ($studentThreads as $index => $thread) {
+        foreach ($threads as $index => $thread) {
             if ($index % 3 === 0) {
                 continue;
             }
@@ -121,6 +116,7 @@ final class QaReplySeeder extends Seeder
             $replyCount = fake()->numberBetween(1, 3);
 
             foreach (range(1, $replyCount) as $i) {
+                $student = $students->random();
                 $this->createReply($thread, $student);
             }
         }

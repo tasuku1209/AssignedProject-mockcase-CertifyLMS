@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\CertificationStatus;
 use App\Enums\QaThreadStatus;
+use App\Enums\UserRole;
 use App\Http\Requests\QaThread\IndexAsAdminRequest;
 use App\Http\Requests\QaThread\IndexRequest;
 use App\Http\Requests\QaThread\StoreRequest;
@@ -28,8 +29,10 @@ class QaThreadController extends Controller
     public function index(IndexRequest $request, IndexAction $action): View
     {
         $validated = $request->validated();
+        $user = $request->user();
 
         $threads = $action(
+            user: $user,
             keyword: $validated['keyword'] ?? null,
             status: isset($validated['status'])
                 ? QaThreadStatus::from($validated['status'])
@@ -37,9 +40,19 @@ class QaThreadController extends Controller
             certificationId: $validated['certification_id'] ?? null,
         );
 
+        $certifications = Certification::query()
+            ->published();
+
+        if ($user->role === UserRole::Coach) {
+            $certifications->whereHas(
+                'coaches',
+                fn ($query) => $query->where('users.id', $user->id)
+            );
+        }
+
         return view('qa-thread.index', [
             'threads' => $threads,
-            'certifications' => Certification::published()
+            'certifications' => $certifications
                 ->orderByDesc('updated_at')
                 ->get(),
             'filters' => [
@@ -106,7 +119,7 @@ class QaThreadController extends Controller
         );
 
         return redirect()
-            ->route('qa-board.show', $thread)
+            ->route('qa-board.index', $thread)
             ->with('success', '質問を投稿しました。');
     }
 

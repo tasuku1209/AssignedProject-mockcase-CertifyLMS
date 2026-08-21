@@ -23,7 +23,7 @@ use Illuminate\Support\Collection;
  *    - 合計 10 件
  *    - 作成日時は 1〜10 日前でランダム
  *
- * 2. その他の受講中受講生 1 名
+ * 2. その他の受講中受講生 8 名から資格ごとにランダムに投稿者を抽出
  *    - 公開済み資格 5 件それぞれに未解決 4 件 / 解決済み 1 件
  *    - 合計 25 件
  *    - 作成日時は 11〜30 日前でランダム
@@ -67,14 +67,17 @@ final class QaThreadSeeder extends Seeder
 
         $this->seedForFixedStudent($fixedStudent, $certifications);
 
-        $demoStudent = User::query()
+        $demoStudents = User::query()
             ->where('role', UserRole::Student->value)
             ->where('status', UserStatus::InProgress->value)
-            ->where('email', '!=', 'student@certify-lms.test')
-            ->orderBy('created_at')
-            ->first();
+            ->whereNotIn('email', [
+                'student@certify-lms.test',
+                'student-noquota@certify-lms.test',
+            ])
+            ->limit(8)
+            ->get();
 
-        $this->seedForDemoStudent($demoStudent, $certifications);
+        $this->seedForDemoStudent($demoStudents, $certifications);
     }
 
     /**
@@ -110,11 +113,11 @@ final class QaThreadSeeder extends Seeder
      * 各資格につき未解決 4 件 / 解決済み 1 件。
      * 合計 25 件。
      */
-    private function seedForDemoStudent(User $student, Collection $certifications): void
+    private function seedForDemoStudent(Collection $students, Collection $certifications): void
     {
         foreach ($certifications as $certification) {
             $this->seedUnresolvedThreads(
-                student: $student,
+                student: $students->random(),
                 certification: $certification,
                 count: 4,
                 minDaysAgo: 11,
@@ -122,7 +125,7 @@ final class QaThreadSeeder extends Seeder
             );
 
             $this->seedResolvedThreads(
-                student: $student,
+                student: $students->random(),
                 certification: $certification,
                 count: 1,
                 minDaysAgo: 11,
