@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Enums\CertificationStatus;
-use App\Enums\EnrollmentStatus;
 use App\Enums\UserRole;
 use App\Models\Certification;
 use App\Models\QaThread;
@@ -50,15 +49,7 @@ class QaThreadPolicy
             return false;
         }
 
-        // スレッドの資格が公開中であること
-        if ($thread->certification?->status !== CertificationStatus::Published) {
-            return false;
-        }
-
-        // 何らかの資格を現在受講中であること
-        return $auth->enrollments()
-            ->where('status', EnrollmentStatus::Learning->value)
-            ->exists();
+        return $thread->certification?->status === CertificationStatus::Published;
     }
 
     /**
@@ -122,10 +113,8 @@ class QaThreadPolicy
     /**
      * コーチが資格の担当者か。
      */
-    private function assignedCoach(
-        User $coach,
-        Certification $certification
-    ): bool {
+    private function assignedCoach(User $coach, Certification $certification): bool
+    {
         return $certification
             ->coaches()
             ->where('users.id', $coach->id)

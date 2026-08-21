@@ -478,21 +478,51 @@ if (app()->environment('local')) {
 }
 
 // ============================================================
-// 受講生・コーチ共有 — 質問掲示板
+// 受講生・コーチ共有 — 質問掲示板のスレッド一覧
 // ============================================================
-Route::middleware(['auth', 'role:student,coach', 'active-learning'])->group(function () {
-    Route::get('qa-board', [QaThreadController::class, 'index'])
-        ->name('qa-board.index');
+Route::middleware(['auth', 'role:student,coach', 'active-learning'])->group(
+    function () {
+        Route::get('qa-board', [QaThreadController::class, 'index'])
+            ->name('qa-board.index');
+    }
+);
 
+// ============================================================
+// 受講生専用ルート — 質問掲示板のスレッド投稿
+// ============================================================
+Route::middleware(['auth', 'role:student', 'active-learning'])->group(function () {
     Route::get('qa-board/create', [QaThreadController::class, 'create'])
         ->name('qa-board.create');
-
     Route::post('qa-board', [QaThreadController::class, 'store'])
         ->name('qa-board.store');
+});
 
-    Route::get('qa-board/{thread}', [QaThreadController::class, 'show'])
-        ->name('qa-board.show');
+// ============================================================
+// 受講生・コーチ共有 — 質問掲示板のスレッド詳細、回答投稿・編集・削除
+// ============================================================
+Route::middleware(['auth', 'role:student,coach', 'active-learning'])->group(
+    function () {
+        Route::get('qa-board/{thread}', [QaThreadController::class, 'show'])
+            ->name('qa-board.show');
+        // 回答
+        Route::post('qa-board/{thread}/replies', [QaReplyController::class, 'store'])
+            ->name('qa-board.replies.store');
 
+        Route::get('qa-board/{thread}/replies/{reply}/edit', [QaReplyController::class, 'edit'])
+            ->name('qa-board.replies.edit');
+
+        Route::patch('qa-board/{thread}/replies/{reply}', [QaReplyController::class, 'update'])
+            ->name('qa-board.replies.update');
+
+        Route::delete('qa-board/{thread}/replies/{reply}', [QaReplyController::class, 'destroy'])
+            ->name('qa-board.replies.destroy');
+    }
+);
+
+// ============================================================
+// 受講生専用ルート — 質問掲示板のスレッド編集・削除・解決済/未解決の切り替え
+// ============================================================
+Route::middleware(['auth', 'role:student', 'active-learning'])->group(function () {
     Route::get('qa-board/{thread}/edit', [QaThreadController::class, 'edit'])
         ->name('qa-board.edit');
 
@@ -507,19 +537,6 @@ Route::middleware(['auth', 'role:student,coach', 'active-learning'])->group(func
 
     Route::post('qa-board/{thread}/unresolve', [QaThreadController::class, 'unresolve'])
         ->name('qa-board.unresolve');
-
-    // 回答
-    Route::post('qa-board/{thread}/replies', [QaReplyController::class, 'store'])
-        ->name('qa-board.replies.store');
-
-    Route::get('qa-board/{thread}/replies/{reply}/edit', [QaReplyController::class, 'edit'])
-        ->name('qa-board.replies.edit');
-
-    Route::patch('qa-board/{thread}/replies/{reply}', [QaReplyController::class, 'update'])
-        ->name('qa-board.replies.update');
-
-    Route::delete('qa-board/{thread}/replies/{reply}', [QaReplyController::class, 'destroy'])
-        ->name('qa-board.replies.destroy');
 });
 
 // ============================================================
