@@ -24,7 +24,7 @@ class NotificationPolicy
      *
      * 自分宛の通知のみを取得する制御は Action 側で行う。
      */
-    public function view(User $user): bool
+    public function viewAny(User $user): bool
     {
         return in_array(
             $user->role,

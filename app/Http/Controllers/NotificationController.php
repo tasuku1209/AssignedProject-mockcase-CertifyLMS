@@ -16,7 +16,7 @@ class NotificationController extends Controller
 {
     public function index(Request $request, IndexAction $action): View
     {
-        $this->authorize('view', $request->user());
+        $this->authorize('viewAny', DatabaseNotification::class);
 
         $result = $action(
             $request->user(),
