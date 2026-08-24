@@ -22,7 +22,7 @@ final class UpdateAction
      *     description?: ?string,
      *     duration_days: int,
      *     default_meeting_quota: int,
-     *     sort_order: int
+     *     sort_order?: int
      * } $validated
      */
     public function __invoke(
@@ -36,7 +36,7 @@ final class UpdateAction
                 'description' => $validated['description'] ?? null,
                 'duration_days' => $validated['duration_days'],
                 'default_meeting_quota' => $validated['default_meeting_quota'],
-                'sort_order' => $validated['sort_order'],
+                'sort_order' => $validated['sort_order'] ?? 0,
                 'updated_by_user_id' => $auth->id,
             ]);
 

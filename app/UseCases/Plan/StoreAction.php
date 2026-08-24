@@ -23,7 +23,7 @@ final class StoreAction
      *     description?: ?string,
      *     duration_days: int,
      *     default_meeting_quota: int,
-     *     sort_order: int
+     *     sort_order?: int
      * } $validated
      */
     public function __invoke(User $auth, array $validated): Plan
@@ -34,7 +34,7 @@ final class StoreAction
             'duration_days' => $validated['duration_days'],
             'default_meeting_quota' => $validated['default_meeting_quota'],
             'status' => PlanStatus::Draft,
-            'sort_order' => $validated['sort_order'],
+            'sort_order' => $validated['sort_order'] ?? 0,
             'created_by_user_id' => $auth->id,
             'updated_by_user_id' => $auth->id,
         ]));
