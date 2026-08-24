@@ -8,6 +8,7 @@ use App\Http\Requests\Plan\IndexRequest;
 use App\Http\Requests\Plan\StoreRequest;
 use App\Http\Requests\Plan\UpdateRequest;
 use App\Models\Plan;
+use App\UseCases\Plan\DestroyAction;
 use App\UseCases\Plan\IndexAction;
 use App\UseCases\Plan\ShowAction;
 use App\UseCases\Plan\StoreAction;
@@ -89,5 +90,18 @@ class PlanController extends Controller
         return redirect()
             ->route('admin.plans.show', $plan)
             ->with('success', '受講プランを更新しました。');
+    }
+
+    public function destroy(
+        Plan $plan,
+        DestroyAction $action
+    ): RedirectResponse {
+        $this->authorize('delete', $plan);
+
+        $action($plan);
+
+        return redirect()
+            ->route('admin.plans.index')
+            ->with('success', '受講プランを削除しました。');
     }
 }
