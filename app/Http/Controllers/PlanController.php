@@ -74,7 +74,7 @@ class PlanController extends Controller
     {
         $this->authorize('update', $plan);
 
-        return view('plan.edit', [
+        return view('plan.management.edit', [
             'plan' => $plan,
         ]);
     }
