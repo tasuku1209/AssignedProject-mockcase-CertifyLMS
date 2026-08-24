@@ -8,10 +8,13 @@ use App\Http\Requests\Plan\IndexRequest;
 use App\Http\Requests\Plan\StoreRequest;
 use App\Http\Requests\Plan\UpdateRequest;
 use App\Models\Plan;
+use App\UseCases\Plan\ArchiveAction;
 use App\UseCases\Plan\DestroyAction;
 use App\UseCases\Plan\IndexAction;
+use App\UseCases\Plan\PublishAction;
 use App\UseCases\Plan\ShowAction;
 use App\UseCases\Plan\StoreAction;
+use App\UseCases\Plan\UnarchiveAction;
 use App\UseCases\Plan\UpdateAction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -103,5 +106,38 @@ class PlanController extends Controller
         return redirect()
             ->route('admin.plans.index')
             ->with('success', '受講プランを削除しました。');
+    }
+
+    public function publish(Plan $plan, PublishAction $action): RedirectResponse
+    {
+        $this->authorize('publish', $plan);
+
+        $action($plan, request()->user());
+
+        return redirect()
+            ->route('admin.plans.show', $plan)
+            ->with('success', 'プランを公開しました。');
+    }
+
+    public function archive(Plan $plan, ArchiveAction $action): RedirectResponse
+    {
+        $this->authorize('archive', $plan);
+
+        $action($plan, request()->user());
+
+        return redirect()
+            ->route('admin.plans.show', $plan)
+            ->with('success', 'プランをアーカイブしました。');
+    }
+
+    public function unarchive(Plan $plan, UnarchiveAction $action): RedirectResponse
+    {
+        $this->authorize('unarchive', $plan);
+
+        $action($plan, request()->user());
+
+        return redirect()
+            ->route('admin.plans.show', $plan)
+            ->with('success', 'プランを下書きに戻しました。');
     }
 }
