@@ -148,7 +148,10 @@ class Enrollment extends Model
      */
     public function goals(): HasMany
     {
-        return $this->hasMany(EnrollmentGoal::class);
+        return $this->hasMany(EnrollmentGoal::class)
+            ->orderByRaw('CASE WHEN achieved_at IS NULL THEN 0 ELSE 1 END')
+            ->orderBy('target_date')
+            ->orderByDesc('created_at');
     }
 
     public function scopeLearning(Builder $query): Builder
