@@ -17,7 +17,7 @@ return new class extends Migration
                 ->cascadeOnDelete();
             $table->string('title', 100);
             $table->text('description')->nullable();
-            $table->date('target_date');
+            $table->date('target_date')->nullable();
             $table->timestamp('achieved_at')->nullable();
             $table->timestamps();
         });

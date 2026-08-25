@@ -17,7 +17,7 @@ final class UpdateAction
         return DB::transaction(function () use ($goal, $validated) {
             $goal->update([
                 'title' => $validated['title'],
-                'target_date' => $validated['target_date'],
+                'target_date' => $validated['target_date'] ?? null,
                 'description' => $validated['description'] ?? null,
             ]);
 

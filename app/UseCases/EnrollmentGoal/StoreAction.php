@@ -19,7 +19,7 @@ final class StoreAction
     ): EnrollmentGoal {
         return DB::transaction(fn () => $enrollment->goals()->create([
             'title' => $validated['title'],
-            'target_date' => $validated['target_date'],
+            'target_date' => $validated['target_date'] ?? null,
             'description' => $validated['description'] ?? null,
         ]));
     }

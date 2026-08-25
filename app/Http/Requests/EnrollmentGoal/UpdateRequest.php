@@ -28,7 +28,7 @@ class UpdateRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:100'],
-            'target_date' => ['required', 'date'],
+            'target_date' => ['nullable', 'date'],
             'description' => ['nullable', 'string', 'max:1000'],
         ];
     }
