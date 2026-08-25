@@ -53,8 +53,7 @@ class EnrollmentGoalPolicy
      */
     public function markAchieved(User $user, EnrollmentGoal $goal): bool
     {
-        return $this->canManage($user, $goal)
-            && $goal->achieved_at === null;
+        return $this->canManage($user, $goal);
     }
 
     /**
@@ -62,8 +61,7 @@ class EnrollmentGoalPolicy
      */
     public function unmarkAchieved(User $user, EnrollmentGoal $goal): bool
     {
-        return $this->canManage($user, $goal)
-            && $goal->achieved_at !== null;
+        return $this->canManage($user, $goal);
     }
 
     /**
