@@ -56,6 +56,7 @@ use App\Policies\SectionQuestionAttemptPolicy;
 use App\Policies\SectionQuestionPolicy;
 use App\Policies\SectionQuizPolicy;
 use App\Policies\SectionViewPolicy;
+use App\Policies\SettingsPolicy;
 use App\Policies\UserPolicy;
 use App\Policies\WeakDrillPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
@@ -115,5 +116,14 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('quiz.section.view', [SectionQuizPolicy::class, 'view']);
         Gate::define('quiz.weak-drill.view', [WeakDrillPolicy::class, 'view']);
         Gate::define('quiz.answer.create', [SectionQuestionAnswerPolicy::class, 'create']);
+
+        // User モデルには既存の UserPolicy が auto-bind されているため、
+        // ユーザー設定画面の本人操作権限は UserPolicy と分離し、
+        // 別 Gate 名で SettingsPolicy に登録する。
+        Gate::define('settings.profile.view', [SettingsPolicy::class, 'view']);
+        Gate::define('settings.profile.update', [SettingsPolicy::class, 'updateProfile']);
+        Gate::define('settings.avatar.store', [SettingsPolicy::class, 'storeAvatar']);
+        Gate::define('settings.avatar.delete', [SettingsPolicy::class, 'deleteAvatar']);
+        Gate::define('settings.password.update', [SettingsPolicy::class, 'updatePassword']);
     }
 }

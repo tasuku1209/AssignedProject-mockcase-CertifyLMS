@@ -25,6 +25,7 @@ use App\Http\Controllers\MockExamQuestionController;
 use App\Http\Controllers\MockExamSessionController;
 use App\Http\Controllers\MockExamSessionMonitorController;
 use App\Http\Controllers\PartController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QaReplyController;
 use App\Http\Controllers\QaThreadController;
 use App\Http\Controllers\QuestionCategoryController;
@@ -75,6 +76,22 @@ Route::middleware('auth')->group(function () {
     Route::get('enrollments/{enrollment}', [EnrollmentController::class, 'show'])
         ->withTrashed()
         ->name('enrollments.show');
+
+    // プロフィール
+    Route::get('/settings/profile', [ProfileController::class, 'edit'])
+        ->name('settings.profile.edit');
+    Route::patch('/settings/profile', [ProfileController::class, 'update'])
+        ->name('settings.profile.update');
+
+    // パスワード変更
+    Route::put('/settings/password', [PasswordController::class, 'update'])
+        ->name('settings.password.update');
+
+    // アバター
+    Route::post('/settings/avatar', [AvatarController::class, 'store'])
+        ->name('settings.avatar.store');
+    Route::delete('/settings/avatar', [AvatarController::class, 'destroy'])
+        ->name('settings.avatar.destroy');
 });
 
 // ============================================================
