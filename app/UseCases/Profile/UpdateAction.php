@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\UseCases\Settings;
+namespace App\UseCases\Profile;
 
 use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
-final class UpdateProfileAction
+final class UpdateAction
 {
     /**
      * @param array{

@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Settings\UpdateProfileRequest;
-use App\UseCases\Settings\UpdateProfileAction;
+use App\Http\Requests\Profile\UpdateRequest;
+use App\UseCases\Profile\UpdateAction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class SettingsController extends Controller
+class ProfileController extends Controller
 {
     /**
      * プロフィール設定画面を表示する。
@@ -26,8 +26,8 @@ class SettingsController extends Controller
     }
 
     public function updateProfile(
-        UpdateProfileRequest $request,
-        UpdateProfileAction $action,
+        UpdateRequest $request,
+        UpdateAction $action,
     ): RedirectResponse {
         $action($request->user(), $request->validated());
 

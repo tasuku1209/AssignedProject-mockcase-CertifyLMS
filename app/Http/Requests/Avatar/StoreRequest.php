@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests\Settings;
+namespace App\Http\Requests\Avatar;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreAvatarRequest extends FormRequest
+class StoreRequest extends FormRequest
 {
     public function authorize(): bool
     {
