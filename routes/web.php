@@ -25,7 +25,6 @@ use App\Http\Controllers\MockExamQuestionController;
 use App\Http\Controllers\MockExamSessionController;
 use App\Http\Controllers\MockExamSessionMonitorController;
 use App\Http\Controllers\PartController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QaReplyController;
 use App\Http\Controllers\QaThreadController;
 use App\Http\Controllers\QuestionCategoryController;
@@ -40,6 +39,7 @@ use App\Http\Controllers\SectionQuestionController;
 use App\Http\Controllers\SectionQuizController;
 use App\Http\Controllers\SectionQuizResultController;
 use App\Http\Controllers\Settings\AvailabilityController as SettingsAvailabilityController;
+use App\Http\Controllers\Settings\SettingsController;
 use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
@@ -78,19 +78,19 @@ Route::middleware('auth')->group(function () {
         ->name('enrollments.show');
 
     // プロフィール
-    Route::get('/settings/profile', [ProfileController::class, 'edit'])
+    Route::get('/settings/profile', [SettingsController::class, 'edit'])
         ->name('settings.profile.edit');
-    Route::patch('/settings/profile', [ProfileController::class, 'update'])
+    Route::patch('/settings/profile', [SettingsController::class, 'update'])
         ->name('settings.profile.update');
 
     // パスワード変更
-    Route::put('/settings/password', [PasswordController::class, 'update'])
+    Route::put('/settings/password', [SettingsController::class, 'update'])
         ->name('settings.password.update');
 
     // アバター
-    Route::post('/settings/avatar', [AvatarController::class, 'store'])
+    Route::post('/settings/avatar', [SettingsController::class, 'store'])
         ->name('settings.avatar.store');
-    Route::delete('/settings/avatar', [AvatarController::class, 'destroy'])
+    Route::delete('/settings/avatar', [SettingsController::class, 'destroy'])
         ->name('settings.avatar.destroy');
 });
 
