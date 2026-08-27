@@ -25,7 +25,7 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function updateProfile(
+    public function update(
         UpdateRequest $request,
         UpdateAction $action,
     ): RedirectResponse {
