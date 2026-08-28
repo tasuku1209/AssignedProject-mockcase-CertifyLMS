@@ -58,12 +58,16 @@ class EnrollmentNotePolicy
     /**
      * ユーザーが対象受講登録のメモを扱えるか。
      *
-     * - admin: 全受講登録可
-     * - coach: 担当資格の受講登録のみ可
+     * - admin: 全受講登録可(enrollmentがソフトデリート済みの場合は不可)
+     * - coach: 担当資格の受講登録のみ可(enrollmentがソフトデリート済みの場合は不可)
      * - student: 不可
      */
     private function canManage(User $auth, Enrollment $enrollment): bool
     {
+        if ($enrollment->trashed()) {
+            return false;
+        }
+
         return match ($auth->role) {
             UserRole::Admin => true,
             UserRole::Coach => $this->isAssignedCoach($enrollment, $auth),
