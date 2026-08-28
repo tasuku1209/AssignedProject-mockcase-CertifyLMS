@@ -8,6 +8,7 @@ use App\Http\Requests\EnrollmentNote\StoreRequest;
 use App\Http\Requests\EnrollmentNote\UpdateRequest;
 use App\Models\Enrollment;
 use App\Models\EnrollmentNote;
+use App\UseCases\EnrollmentNote\DestroyAction;
 use App\UseCases\EnrollmentNote\StoreAction;
 use App\UseCases\EnrollmentNote\UpdateAction;
 use Illuminate\Http\RedirectResponse;
@@ -53,5 +54,20 @@ class EnrollmentNoteController extends Controller
         return redirect()
             ->route('enrollments.show', $note->enrollment_id)
             ->with('success', 'メモを更新しました。');
+    }
+
+    public function destroy(
+        EnrollmentNote $note,
+        DestroyAction $action,
+    ): RedirectResponse {
+        $this->authorize('delete', $note);
+
+        $enrollmentId = $note->enrollment_id;
+
+        $action($note);
+
+        return redirect()
+            ->route('enrollments.show', $enrollmentId)
+            ->with('success', 'メモを削除しました。');
     }
 }
