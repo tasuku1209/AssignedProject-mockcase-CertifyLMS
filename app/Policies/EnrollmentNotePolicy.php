@@ -16,22 +16,49 @@ use App\Models\User;
  * - coach: 担当資格の受講登録のみ閲覧・追加可
  * - coach: 自分が作成したメモのみ編集・削除可
  * - student: メモに関する操作をすべて拒否
+ *
+ * soft delete 済みの Enrollment はメモ操作の対象外とする。
  */
 class EnrollmentNotePolicy
 {
+    /**
+     * 対象 Enrollment のメモ一覧を閲覧できるか。
+     */
     public function viewAny(User $auth, Enrollment $enrollment): bool
     {
+        if ($enrollment->trashed()) {
+            return false;
+        }
+
         return $this->canManage($auth, $enrollment);
     }
 
+    /**
+     * 対象 Enrollment にメモを作成できるか。
+     */
     public function create(User $auth, Enrollment $enrollment): bool
     {
+        if ($enrollment->trashed()) {
+            return false;
+        }
+
         return $this->canManage($auth, $enrollment);
     }
 
+    /**
+     * メモを更新できるか。
+     *
+     * 親 Enrollment が通常のリレーションで取得できない場合は操作不可。
+     */
     public function update(User $auth, EnrollmentNote $note): bool
     {
-        if (! $this->canManage($auth, $note->enrollment)) {
+        $enrollment = $note->enrollment;
+
+        if ($enrollment === null) {
+            return false;
+        }
+
+        if (! $this->canManage($auth, $enrollment)) {
             return false;
         }
 
@@ -42,9 +69,20 @@ class EnrollmentNotePolicy
         };
     }
 
+    /**
+     * メモを削除できるか。
+     *
+     * 親 Enrollment が通常のリレーションで取得できない場合は操作不可。
+     */
     public function delete(User $auth, EnrollmentNote $note): bool
     {
-        if (! $this->canManage($auth, $note->enrollment)) {
+        $enrollment = $note->enrollment;
+
+        if ($enrollment === null) {
+            return false;
+        }
+
+        if (! $this->canManage($auth, $enrollment)) {
             return false;
         }
 
@@ -58,16 +96,12 @@ class EnrollmentNotePolicy
     /**
      * ユーザーが対象受講登録のメモを扱えるか。
      *
-     * - admin: 全受講登録可(enrollmentがソフトデリート済みの場合は不可)
-     * - coach: 担当資格の受講登録のみ可(enrollmentがソフトデリート済みの場合は不可)
+     * - admin: 全受講登録可
+     * - coach: 担当資格の受講登録のみ可
      * - student: 不可
      */
     private function canManage(User $auth, Enrollment $enrollment): bool
     {
-        if ($enrollment->trashed()) {
-            return false;
-        }
-
         return match ($auth->role) {
             UserRole::Admin => true,
             UserRole::Coach => $this->isAssignedCoach($enrollment, $auth),
