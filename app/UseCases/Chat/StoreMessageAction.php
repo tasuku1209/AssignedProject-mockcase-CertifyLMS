@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\UseCases\Chat;
 
+use App\Enums\UserRole;
+use App\Enums\UserStatus;
+use App\Notifications\ChatMessageReceivedNotification;
 use App\Events\ChatMessageSent;
 use App\Models\ChatMember;
 use App\Models\ChatMessage;
@@ -37,6 +40,25 @@ final class StoreMessageAction
                 ->where('chat_room_id', $room->id)
                 ->where('user_id', $sender->id)
                 ->update(['last_read_at' => now()]);
+
+            $recipients = $room->members()
+                ->with('user')
+                ->where('user_id', '!=', $sender->id)
+                ->get()
+                ->map(fn(ChatMember $member) => $member->user)
+                ->filter(function (User $user): bool {
+                    return $user->role === UserRole::Coach
+                        || (
+                            $user->role === UserRole::Student
+                            && $user->status === UserStatus::InProgress
+                        );
+                });
+
+            foreach ($recipients as $recipient) {
+                $recipient->notify(
+                    new ChatMessageReceivedNotification($message)
+                );
+            }
 
             DB::afterCommit(function () use ($message): void {
                 broadcast(new ChatMessageSent($message->load('sender')))->toOthers();
