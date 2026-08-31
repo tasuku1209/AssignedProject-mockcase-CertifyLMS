@@ -34,6 +34,12 @@ class NotificationController extends Controller
 
         $action($notification);
 
+        $url = $notification->data['url'] ?? null;
+
+        if ($url !== null) {
+            return redirect()->to($url);
+        }
+
         return redirect()->back();
     }
 
@@ -41,7 +47,7 @@ class NotificationController extends Controller
         Request $request,
         MarkAllAsReadAction $action,
     ): RedirectResponse {
-        $this->authorize('markAllAsRead', $request->user());
+        $this->authorize('markAllAsRead', DatabaseNotification::class);
 
         $action($request->user());
 
