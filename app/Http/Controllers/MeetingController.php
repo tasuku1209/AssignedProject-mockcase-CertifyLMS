@@ -20,6 +20,7 @@ use App\Models\Enrollment;
 use App\Models\Meeting;
 use App\Models\MeetingMemo;
 use App\Models\User;
+use App\Notifications\MeetingReservedNotification;
 use App\Services\CoachMeetingLoadService;
 use App\Services\MeetingAvailabilityService;
 use App\Services\MeetingQuotaService;
@@ -212,6 +213,12 @@ class MeetingController extends Controller
 
             $transaction = ($consumeAction)($student, $meeting->id);
             $meeting->update(['meeting_quota_transaction_id' => $transaction->id]);
+
+            DB::afterCommit(function () use ($meeting): void {
+                $meeting->coach->notify(
+                    new MeetingReservedNotification($meeting)
+                );
+            });
 
             return $meeting->fresh();
         });
