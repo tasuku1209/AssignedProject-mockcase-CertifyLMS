@@ -41,6 +41,71 @@ class CrudTest extends TestCase
         $this->assertSame($admin->id, $meetingPack->updated_by_user_id);
     }
 
+    public function test_admin_can_search_meeting_packs_by_keyword(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $target = MeetingPack::factory()->create([
+            'name' => 'スタンダード面談パック',
+        ]);
+
+        MeetingPack::factory()->create([
+            'name' => 'プレミアム面談パック',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.meeting-packs.index', [
+                'keyword' => 'スタンダード',
+            ]))
+            ->assertOk()
+            ->assertSee($target->name)
+            ->assertDontSee('プレミアム面談パック');
+    }
+
+    public function test_admin_can_filter_meeting_packs_by_status(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $published = MeetingPack::factory()->published()->create([
+            'name' => '公開中パック',
+        ]);
+
+        MeetingPack::factory()->draft()->create([
+            'name' => '下書きパック',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.meeting-packs.index', [
+                'status' => 'published',
+            ]))
+            ->assertOk()
+            ->assertSee($published->name)
+            ->assertDontSee('下書きパック');
+    }
+
+    public function test_meeting_pack_index_is_paginated(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        MeetingPack::factory()->count(21)->create();
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.meeting-packs.index'));
+
+        $response->assertOk();
+
+        // IndexAction のデフォルトは 20 件/ページ
+        $this->assertCount(
+            20,
+            $response->viewData('plans')->items()
+        );
+
+        $this->assertSame(
+            21,
+            $response->viewData('plans')->total()
+        );
+    }
+
     public function test_admin_can_update_meeting_pack(): void
     {
         $admin = User::factory()->admin()->create();
