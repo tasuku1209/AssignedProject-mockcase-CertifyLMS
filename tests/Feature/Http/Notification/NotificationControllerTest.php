@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Http\Notification;
 
 use App\Models\User;
+use App\Notifications\QaReplyReceivedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Str;
@@ -32,6 +33,58 @@ class NotificationControllerTest extends TestCase
             })
             ->assertViewHas('unreadCount', 1)
             ->assertViewHas('tab', 'all');
+    }
+
+    public function test_notifications_are_ordered_newest_first(): void
+    {
+        // Arrange
+        $student = User::factory()->student()->inProgress()->create();
+
+        $older = DatabaseNotification::create([
+            'id' => (string) Str::uuid(),
+            'type' => QaReplyReceivedNotification::class,
+            'notifiable_type' => User::class,
+            'notifiable_id' => $student->id,
+            'data' => [
+                'notification_type' => 'qa_reply_received',
+                'title' => '古い通知',
+                'message' => null,
+                'body_preview' => '古い回答です。',
+                'url' => '#',
+            ],
+            'read_at' => null,
+            'created_at' => now()->subDays(2),
+            'updated_at' => now()->subDays(2),
+        ]);
+
+        $newer = DatabaseNotification::create([
+            'id' => (string) Str::uuid(),
+            'type' => QaReplyReceivedNotification::class,
+            'notifiable_type' => User::class,
+            'notifiable_id' => $student->id,
+            'data' => [
+                'notification_type' => 'qa_reply_received',
+                'title' => '新しい通知',
+                'message' => null,
+                'body_preview' => '新しい回答です。',
+                'url' => '#',
+            ],
+            'read_at' => null,
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        // Act
+        $response = $this->actingAs($student)
+            ->get(route('notifications.index'));
+
+        // Assert
+        $response->assertOk();
+
+        $notifications = $response->viewData('notifications');
+
+        $this->assertSame($newer->id, $notifications->first()->id);
+        $this->assertSame($older->id, $notifications->last()->id);
     }
 
     public function test_student_can_view_unread_notifications_only(): void
