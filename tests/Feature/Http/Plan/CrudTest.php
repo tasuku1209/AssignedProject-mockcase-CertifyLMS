@@ -14,6 +14,71 @@ class CrudTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_can_search_plans_by_name(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $matchedPlan = Plan::factory()->create([
+            'name' => 'スタンダードプラン',
+        ]);
+
+        Plan::factory()->create([
+            'name' => 'ビギナープラン',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.plans.index', [
+                'keyword' => 'スタンダード',
+            ]))
+            ->assertOk()
+            ->assertSee($matchedPlan->name)
+            ->assertDontSee('ビギナープラン');
+    }
+
+    public function test_admin_can_filter_plans_by_status(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $publishedPlan = Plan::factory()->published()->create([
+            'name' => '公開中プラン',
+        ]);
+
+        Plan::factory()->draft()->create([
+            'name' => '下書きプラン',
+        ]);
+
+        Plan::factory()->archived()->create([
+            'name' => 'アーカイブプラン',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.plans.index', [
+                'status' => PlanStatus::Published->value,
+            ]))
+            ->assertOk()
+            ->assertSee($publishedPlan->name)
+            ->assertDontSee('下書きプラン')
+            ->assertDontSee('アーカイブプラン');
+    }
+
+    public function test_admin_can_paginate_plans(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        Plan::factory()->count(21)->create();
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.plans.index'));
+
+        $response
+            ->assertOk()
+            ->assertViewHas('plans', function ($plans) {
+                return $plans->perPage() === 20
+                    && $plans->total() === 21
+                    && $plans->currentPage() === 1;
+            });
+    }
+
     public function test_admin_can_create_plan_as_draft(): void
     {
         $admin = User::factory()->admin()->create();
