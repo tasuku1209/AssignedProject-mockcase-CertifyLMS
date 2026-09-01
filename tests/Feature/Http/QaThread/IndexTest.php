@@ -36,6 +36,48 @@ class IndexTest extends TestCase
         $response->assertSee('公開資格の質問');
     }
 
+    public function test_threads_are_ordered_by_latest_created_at(): void
+    {
+        // Arrange
+        $student = User::factory()->student()->create();
+        $certification = Certification::factory()->published()->create();
+
+        $olderThread = QaThread::factory()
+            ->for($student, 'user')
+            ->for($certification, 'certification')
+            ->create([
+                'title' => '古い質問',
+                'created_at' => now()->subDays(2),
+            ]);
+
+        $newerThread = QaThread::factory()
+            ->for($student, 'user')
+            ->for($certification, 'certification')
+            ->create([
+                'title' => '新しい質問',
+                'created_at' => now()->subDay(),
+            ]);
+
+        // Act
+        $response = $this->actingAs($student)
+            ->get(route('qa-board.index'));
+
+        // Assert
+        $response->assertOk();
+
+        $threads = $response->viewData('threads');
+
+        $this->assertSame(
+            $newerThread->id,
+            $threads->first()->id
+        );
+
+        $this->assertSame(
+            $olderThread->id,
+            $threads->last()->id
+        );
+    }
+
     public function test_student_sees_only_threads_of_published_certifications(): void
     {
         $student = User::factory()->student()->create();
