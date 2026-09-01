@@ -6,7 +6,6 @@ namespace App\Notifications;
 
 use App\Models\QaReply;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -60,14 +59,18 @@ class QaReplyReceivedNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
+        $sender = $this->reply->user;
+
         return (new MailMessage)
-            ->subject('[CertifyLMS]質問掲示板に回答がありました')
-            ->line("{$this->reply->user->name}さんから質問に回答がありました。")
+            ->subject('Certify LMS 質問掲示板の回答のご案内')
+            ->greeting('Certify LMS をご利用の皆様へ')
+            ->line("{$sender->name}さんから質問に回答がありました。")
             ->line($this->reply->body)
             ->action(
                 '質問を確認する',
                 route('qa-board.show', $this->reply->qaThread),
-            );
+            )
+            ->salutation('Certify LMS 運営チーム');
     }
 
     /**

@@ -50,13 +50,15 @@ class MeetingCanceledNotification extends Notification implements ShouldQueue
         $actor = $this->meeting->canceledBy;
 
         return (new MailMessage)
-            ->subject('[CertifyLMS]面談キャンセルのお知らせ')
+            ->subject('Certify LMS 面談キャンセルのご案内')
+            ->greeting('Certify LMS をご利用の皆様へ')
             ->line("{$actor->name}さんが面談をキャンセルしました。")
             ->line('面談日時：'.$this->meeting->scheduled_at->format('Y年n月j日 H:i'))
             ->action(
                 '面談を確認する',
                 route('meetings.show', $this->meeting),
-            );
+            )
+            ->salutation('Certify LMS 運営チーム');
     }
 
     /**

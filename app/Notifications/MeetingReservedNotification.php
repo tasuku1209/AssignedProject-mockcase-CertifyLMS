@@ -49,13 +49,15 @@ class MeetingReservedNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('[CertifyLMS]面談予約がありました')
+            ->subject('Certify LMS 面談予約のご案内')
+            ->greeting('Certify LMS をご利用の皆様へ')
             ->line("{$this->meeting->student->name}さんから面談予約がありました。")
             ->line($this->meeting->topic)
             ->action(
                 '面談を確認する',
                 route('meetings.show', $this->meeting),
-            );
+            )
+            ->salutation('Certify LMS 運営チーム');
     }
 
     /**

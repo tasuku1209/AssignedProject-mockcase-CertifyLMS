@@ -50,13 +50,15 @@ class ChatMessageReceivedNotification extends Notification implements ShouldQueu
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('[CertifyLMS]メッセージが届きました')
+            ->subject('Certify LMS チャット受信のご案内')
+            ->greeting('Certify LMS をご利用の皆様へ')
             ->line("{$this->message->sender->name}さんからメッセージが届きました。")
             ->line($this->message->body)
             ->action(
                 'チャットを確認する',
                 route('chat.show', $this->message->chatRoom),
-            );
+            )
+            ->salutation('Certify LMS 運営チーム');
     }
 
     /**
