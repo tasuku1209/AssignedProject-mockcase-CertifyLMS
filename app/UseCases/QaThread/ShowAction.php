@@ -18,7 +18,9 @@ final class ShowAction
             ->load([
                 'user',
                 'certification',
-                'replies.user',
+                'replies' => fn ($query) => $query
+                    ->with('user')
+                    ->orderByDesc('created_at'),
             ])
             ->loadCount('replies');
     }
