@@ -37,7 +37,7 @@ class ShowTest extends TestCase
         $response->assertViewHas('thread');
     }
 
-    public function test_replies_are_ordered_by_latest_created_at(): void
+    public function test_replies_are_ordered_by_oldest_created_at(): void
     {
         // Arrange
         $student = User::factory()->student()->create();
@@ -74,12 +74,12 @@ class ShowTest extends TestCase
         $replies = $response->viewData('thread')->replies;
 
         $this->assertSame(
-            $newerReply->id,
+            $olderReply->id,
             $replies->first()->id
         );
 
         $this->assertSame(
-            $olderReply->id,
+            $newerReply->id,
             $replies->last()->id
         );
     }
