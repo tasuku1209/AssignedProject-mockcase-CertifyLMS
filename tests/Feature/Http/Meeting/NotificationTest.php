@@ -37,9 +37,7 @@ class NotificationTest extends TestCase
         $coach = User::factory()
             ->coach()
             ->inProgress()
-            ->create([
-                'meeting_url' => 'https://meet.example.com/coach-room',
-            ]);
+            ->create();
 
         $certification = Certification::factory()
             ->published()
@@ -93,6 +91,67 @@ class NotificationTest extends TestCase
 
         Notification::assertNotSentTo(
             $student,
+            MeetingReservedNotification::class,
+        );
+    }
+
+    public function test_store_does_not_notify_withdrawn_coach(): void
+    {
+        // Arrange
+        Notification::fake();
+
+        $student = User::factory()
+            ->student()
+            ->inProgress()
+            ->create([
+                'max_meetings' => 3,
+            ]);
+
+        $admin = User::factory()
+            ->admin()
+            ->inProgress()
+            ->create();
+
+        $coach = User::factory()
+            ->coach()
+            ->withdrawn()
+            ->create();
+
+        $certification = Certification::factory()
+            ->published()
+            ->create();
+
+        $this->attachCoach($certification, $coach, $admin);
+
+        CoachAvailability::factory()
+            ->forCoach($coach)
+            ->onDay(1)
+            ->timeRange('09:00:00', '18:00:00')
+            ->create();
+
+        $enrollment = Enrollment::factory()
+            ->for($student, 'user')
+            ->for($certification)
+            ->learning()
+            ->create();
+
+        $scheduledAt = now()
+            ->startOfDay()
+            ->next(Carbon::MONDAY)
+            ->setTime(10, 0);
+
+        // Act
+        $response = $this->actingAs($student)
+            ->post(route('meetings.store', $enrollment), [
+                'scheduled_at' => $scheduledAt->format('Y-m-d\TH:i:s'),
+                'topic' => '退会済みコーチへの通知確認',
+            ]);
+
+        // Assert
+        $response->assertRedirect();
+
+        Notification::assertNotSentTo(
+            $coach,
             MeetingReservedNotification::class,
         );
     }
@@ -308,6 +367,59 @@ class NotificationTest extends TestCase
 
         Notification::assertNotSentTo(
             $student,
+            MeetingCanceledNotification::class,
+        );
+    }
+
+    public function test_cancel_does_not_notify_withdrawn_coach(): void
+    {
+        // Arrange
+        Notification::fake();
+
+        $student = User::factory()
+            ->student()
+            ->inProgress()
+            ->create([
+                'max_meetings' => 3,
+            ]);
+
+        $coach = User::factory()
+            ->coach()
+            ->withdrawn()
+            ->create();
+
+        $enrollment = Enrollment::factory()
+            ->for($student, 'user')
+            ->learning()
+            ->create();
+
+        $meeting = Meeting::factory()
+            ->reserved()
+            ->forEnrollment($enrollment)
+            ->forStudent($student)
+            ->forCoach($coach)
+            ->create([
+                'scheduled_at' => now()->addDay(),
+            ]);
+
+        // Act
+        $response = $this->actingAs($student)
+            ->post(route('meetings.cancel', $meeting));
+
+        // Assert
+        $response->assertRedirect(
+            route('meetings.show', $meeting),
+        );
+
+        $meeting->refresh();
+
+        $this->assertSame(
+            MeetingStatus::Canceled,
+            $meeting->status,
+        );
+
+        Notification::assertNotSentTo(
+            $coach,
             MeetingCanceledNotification::class,
         );
     }
