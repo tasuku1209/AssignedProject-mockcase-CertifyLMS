@@ -6,12 +6,12 @@ namespace App\UseCases\Chat;
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
-use App\Notifications\ChatMessageReceivedNotification;
 use App\Events\ChatMessageSent;
 use App\Models\ChatMember;
 use App\Models\ChatMessage;
 use App\Models\ChatRoom;
 use App\Models\User;
+use App\Notifications\ChatMessageReceivedNotification;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -45,13 +45,14 @@ final class StoreMessageAction
                 ->with('user')
                 ->where('user_id', '!=', $sender->id)
                 ->get()
-                ->map(fn(ChatMember $member) => $member->user)
+                ->map(fn (ChatMember $member) => $member->user)
                 ->filter(function (User $user): bool {
-                    return $user->role === UserRole::Coach
-                        || (
-                            $user->role === UserRole::Student
-                            && $user->status === UserStatus::InProgress
-                        );
+                    return in_array(
+                        $user->role,
+                        [UserRole::Student, UserRole::Coach],
+                        true
+                    )
+                        && $user->status === UserStatus::InProgress;
                 });
 
             foreach ($recipients as $recipient) {
