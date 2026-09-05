@@ -148,6 +148,55 @@ class IndexTest extends TestCase
         $response->assertDontSee('未担当資格の質問');
     }
 
+    public function test_coach_does_not_see_threads_of_unpublished_assigned_certification(): void
+    {
+        // Arrange
+        $admin = User::factory()->admin()->create();
+        $coach = User::factory()->coach()->create();
+
+        $publishedCertification = Certification::factory()
+            ->published()
+            ->create();
+
+        $draftCertification = Certification::factory()
+            ->draft()
+            ->create();
+
+        // コーチを公開済資格・非公開資格の両方に担当として割り当てる
+        $publishedCertification->coaches()->attach($coach->id, [
+            'id' => (string) Str::ulid(),
+            'assigned_by_user_id' => $admin->id,
+            'assigned_at' => now(),
+        ]);
+
+        $draftCertification->coaches()->attach($coach->id, [
+            'id' => (string) Str::ulid(),
+            'assigned_by_user_id' => $admin->id,
+            'assigned_at' => now(),
+        ]);
+
+        QaThread::factory()
+            ->for($publishedCertification)
+            ->create([
+                'title' => '公開済み担当資格の質問',
+            ]);
+
+        QaThread::factory()
+            ->for($draftCertification)
+            ->create([
+                'title' => '下書き担当資格の質問',
+            ]);
+
+        // Act
+        $response = $this->actingAs($coach)
+            ->get(route('qa-board.index'));
+
+        // Assert
+        $response->assertOk();
+        $response->assertSee('公開済み担当資格の質問');
+        $response->assertDontSee('下書き担当資格の質問');
+    }
+
     public function test_keyword_filter_matches_title_or_body(): void
     {
         $student = User::factory()->student()->create();
