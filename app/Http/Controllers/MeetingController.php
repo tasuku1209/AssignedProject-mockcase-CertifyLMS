@@ -218,9 +218,13 @@ class MeetingController extends Controller
             $meeting->update(['meeting_quota_transaction_id' => $transaction->id]);
 
             DB::afterCommit(function () use ($meeting): void {
-                $meeting->coach->notify(
-                    new MeetingReservedNotification($meeting)
-                );
+                $coach = $meeting->coach;
+
+                if ($coach->status === UserStatus::InProgress) {
+                    $coach->notify(
+                        new MeetingReservedNotification($meeting)
+                    );
+                }
             });
 
             return $meeting->fresh();
@@ -265,11 +269,12 @@ class MeetingController extends Controller
                     : $locked->student;
 
                 if (
-                    $recipient->role === UserRole::Coach
-                    || (
-                        $recipient->role === UserRole::Student
-                        && $recipient->status === UserStatus::InProgress
+                    in_array(
+                        $recipient->role,
+                        [UserRole::Student, UserRole::Coach],
+                        true
                     )
+                    && $recipient->status === UserStatus::InProgress
                 ) {
                     $recipient->notify(
                         new MeetingCanceledNotification($locked)
