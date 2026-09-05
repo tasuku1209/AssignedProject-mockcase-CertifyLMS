@@ -227,4 +227,57 @@ class NotificationTest extends TestCase
             ChatMessageReceivedNotification::class,
         );
     }
+
+    public function test_message_does_not_notify_withdrawn_coach(): void
+    {
+        // Arrange
+        Notification::fake();
+
+        $student = User::factory()->student()->inProgress()->create();
+        $coach = User::factory()->coach()->withdrawn()->create();
+        $admin = User::factory()->admin()->inProgress()->create();
+
+        $certification = Certification::factory()->published()->create();
+
+        $certification->coaches()->attach($coach->id, [
+            'id' => (string) Str::ulid(),
+            'assigned_by_user_id' => $admin->id,
+            'assigned_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $enrollment = Enrollment::factory()
+            ->for($student)
+            ->for($certification)
+            ->create();
+
+        $room = ChatRoom::factory()
+            ->for($enrollment)
+            ->create();
+
+        ChatMember::factory()->create([
+            'chat_room_id' => $room->id,
+            'user_id' => $student->id,
+        ]);
+
+        ChatMember::factory()->create([
+            'chat_room_id' => $room->id,
+            'user_id' => $coach->id,
+        ]);
+
+        // Act
+        $response = $this->actingAs($student)
+            ->post(route('chat.storeMessage', $room), [
+                'body' => '退会済みコーチへのメッセージです。',
+            ]);
+
+        // Assert
+        $response->assertRedirect(route('chat.show', $room));
+
+        Notification::assertNotSentTo(
+            $coach,
+            ChatMessageReceivedNotification::class,
+        );
+    }
 }
