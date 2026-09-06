@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\BrowseController;
 use App\Http\Controllers\CertificationCatalogController;
@@ -195,6 +196,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
         ->name('admin.enrollments.updateExamDate');
     Route::post('enrollments/{enrollment}/fail', [EnrollmentManagementController::class, 'fail'])
         ->name('admin.enrollments.fail');
+
+    // お知らせ管理
+    Route::get('announcements', [AnnouncementController::class, 'index'])
+        ->name('admin.announcements.index');
+    Route::get('announcements/create', [AnnouncementController::class, 'create'])
+        ->name('admin.announcements.create');
+    Route::post('announcements', [AnnouncementController::class, 'store'])
+        ->name('admin.announcements.store');
+    Route::get('announcements/{announcement}', [AnnouncementController::class, 'show'])
+        ->name('admin.announcements.show');
 });
 
 // ============================================================

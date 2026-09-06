@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Policies\NotificationPolicy;
-use Illuminate\Notifications\DatabaseNotification;
+use App\Models\Announcement;
 use App\Models\Certification;
 use App\Models\CertificationCategory;
 use App\Models\Chapter;
@@ -30,6 +29,7 @@ use App\Models\SectionQuestion;
 use App\Models\SectionQuestionAnswer;
 use App\Models\SectionQuestionAttempt;
 use App\Models\User;
+use App\Policies\AnnouncementPolicy;
 use App\Policies\CertificationCategoryPolicy;
 use App\Policies\CertificationPolicy;
 use App\Policies\ChapterPolicy;
@@ -45,6 +45,7 @@ use App\Policies\MeetingQuotaPolicy;
 use App\Policies\MockExamPolicy;
 use App\Policies\MockExamQuestionPolicy;
 use App\Policies\MockExamSessionPolicy;
+use App\Policies\NotificationPolicy;
 use App\Policies\PartPolicy;
 use App\Policies\PartViewPolicy;
 use App\Policies\QaReplyPolicy;
@@ -61,6 +62,7 @@ use App\Policies\SectionViewPolicy;
 use App\Policies\UserPolicy;
 use App\Policies\WeakDrillPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
@@ -96,6 +98,7 @@ class AuthServiceProvider extends ServiceProvider
         QaThread::class => QaThreadPolicy::class,
         QaReply::class => QaReplyPolicy::class,
         DatabaseNotification::class => NotificationPolicy::class,
+        Announcement::class => AnnouncementPolicy::class,
     ];
 
     /**
