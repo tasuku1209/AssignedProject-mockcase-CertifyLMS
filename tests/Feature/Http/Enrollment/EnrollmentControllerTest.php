@@ -88,6 +88,101 @@ class EnrollmentControllerTest extends TestCase
         });
     }
 
+    public function test_show_orders_goals_by_achievement_target_date_and_created_at(): void
+    {
+        // Arrange
+        $student = User::factory()->student()->inProgress()->create();
+        $enrollment = Enrollment::factory()
+            ->for($student)
+            ->learning()
+            ->create();
+
+        // 未達成・期日あり（期日が早い）
+        $firstGoal = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '未達成・期日が早い',
+                'target_date' => '2026-10-01',
+                'achieved_at' => null,
+                'created_at' => now()->subDays(3),
+            ]);
+
+        // 未達成・期日あり（同じ期日、作成日時が新しい）
+        $secondGoal = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '未達成・同一期日で新しい',
+                'target_date' => '2026-10-01',
+                'achieved_at' => null,
+                'created_at' => now()->subDay(),
+            ]);
+
+        // 未達成・期日あり（期日が遅い）
+        $thirdGoal = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '未達成・期日が遅い',
+                'target_date' => '2026-11-01',
+                'achieved_at' => null,
+                'created_at' => now(),
+            ]);
+
+        // 未達成・期日なし
+        $fourthGoal = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '未達成・期日なし',
+                'target_date' => null,
+                'achieved_at' => null,
+            ]);
+
+        // 達成済み・期日あり
+        $fifthGoal = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '達成済み・期日あり',
+                'target_date' => '2026-09-01',
+                'achieved_at' => now()->subDay(),
+            ]);
+
+        // 達成済み・期日なし
+        $sixthGoal = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '達成済み・期日なし',
+                'target_date' => null,
+                'achieved_at' => now()->subHours(3),
+            ]);
+
+        // Act
+        $response = $this->actingAs($student)
+            ->get(route('enrollments.show', $enrollment));
+
+        // Assert
+        $response->assertOk();
+
+        $response->assertViewHas(
+            'enrollment',
+            function (Enrollment $loadedEnrollment) use (
+                $firstGoal,
+                $secondGoal,
+                $thirdGoal,
+                $fourthGoal,
+                $fifthGoal,
+                $sixthGoal,
+            ) {
+                return $loadedEnrollment->goals->pluck('id')->all() === [
+                    $secondGoal->id,
+                    $firstGoal->id,
+                    $thirdGoal->id,
+                    $fourthGoal->id,
+                    $fifthGoal->id,
+                    $sixthGoal->id,
+                ];
+            },
+        );
+    }
+
     public function test_show_forbids_other_student(): void
     {
         $student = User::factory()->student()->inProgress()->create();
