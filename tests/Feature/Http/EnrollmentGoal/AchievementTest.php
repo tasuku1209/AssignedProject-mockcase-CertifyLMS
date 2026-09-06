@@ -137,4 +137,50 @@ class AchievementTest extends TestCase
 
         $this->assertNotNull($goal->refresh()->achieved_at);
     }
+
+    public function test_mark_achieved_fails_when_goal_is_already_achieved(): void
+    {
+        // Arrange
+        $student = User::factory()->student()->create();
+        $enrollment = Enrollment::factory()
+            ->for($student)
+            ->learning()
+            ->create();
+
+        $goal = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->achieved()
+            ->create();
+
+        // Act & Assert
+        $this->actingAs($student)
+            ->postJson(route('enrollment-goals.markAchieved', $goal))
+            ->assertStatus(409);
+
+        // Assert: 達成済み状態が維持されていること
+        $this->assertNotNull($goal->refresh()->achieved_at);
+    }
+
+    public function test_unmark_achieved_fails_when_goal_is_not_achieved(): void
+    {
+        // Arrange
+        $student = User::factory()->student()->create();
+        $enrollment = Enrollment::factory()
+            ->for($student)
+            ->learning()
+            ->create();
+
+        $goal = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->unachieved()
+            ->create();
+
+        // Act & Assert
+        $this->actingAs($student)
+            ->deleteJson(route('enrollment-goals.unmarkAchieved', $goal))
+            ->assertStatus(409);
+
+        // Assert: 未達成状態が維持されていること
+        $this->assertNull($goal->refresh()->achieved_at);
+    }
 }
