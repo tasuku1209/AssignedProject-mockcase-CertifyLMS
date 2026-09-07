@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Announcement;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\UseCases\Announcement\IndexAction;
+use App\UseCases\Announcement\ShowAction;
 use Illuminate\View\View;
 
 class AnnouncementController extends Controller
@@ -23,6 +23,23 @@ class AnnouncementController extends Controller
         return view(
             'announcement.management.index',
             compact('announcements')
+        );
+    }
+
+    /**
+     * 配信済みお知らせの詳細を表示する。
+     */
+    public function show(
+        Announcement $announcement,
+        ShowAction $action,
+    ): View {
+        $this->authorize('view', $announcement);
+
+        $announcement = $action($announcement);
+
+        return view(
+            'announcement.management.show',
+            compact('announcement')
         );
     }
 }
