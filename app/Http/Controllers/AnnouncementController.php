@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Announcement;
+use App\UseCases\Announcement\CreateAction;
 use App\UseCases\Announcement\IndexAction;
 use App\UseCases\Announcement\ShowAction;
 use Illuminate\View\View;
@@ -18,12 +19,9 @@ class AnnouncementController extends Controller
     {
         $this->authorize('viewAny', Announcement::class);
 
-        $announcements = $action();
-
-        return view(
-            'announcement.management.index',
-            compact('announcements')
-        );
+        return view('announcement.management.index', [
+            'announcements' => $action(),
+        ]);
     }
 
     /**
@@ -35,11 +33,18 @@ class AnnouncementController extends Controller
     ): View {
         $this->authorize('view', $announcement);
 
-        $announcement = $action($announcement);
+        return view('announcement.management.show', [
+            'announcement' => $action($announcement),
+        ]);
+    }
 
-        return view(
-            'announcement.management.show',
-            compact('announcement')
-        );
+    /**
+     * お知らせ配信作成画面を表示する。
+     */
+    public function create(CreateAction $action): View
+    {
+        $this->authorize('create', Announcement::class);
+
+        return view('announcement.management.create', $action());
     }
 }
