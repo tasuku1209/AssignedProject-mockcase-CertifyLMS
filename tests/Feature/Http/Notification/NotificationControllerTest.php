@@ -141,6 +141,51 @@ class NotificationControllerTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_student_can_view_own_notification_detail(): void
+    {
+        // Arrange
+        $student = User::factory()->student()->create();
+
+        $notification = $this->createNotification(
+            $student,
+            false,
+            [
+                'notification_type' => 'admin_announcement',
+                'title' => '運営からのお知らせ',
+                'message' => 'Certify LMS 運営チームからのお知らせ',
+                'body_preview' => null,
+                'body' => 'これは運営からのお知らせです。',
+            ],
+        );
+
+        // Act / Assert
+        $this->actingAs($student)
+            ->get(route('notifications.show', $notification))
+            ->assertOk()
+            ->assertViewIs('notifications.show')
+            ->assertViewHas(
+                'notification',
+                fn (DatabaseNotification $viewNotification): bool => $viewNotification->is($notification),
+            );
+    }
+
+    public function test_student_cannot_view_other_users_notification_detail(): void
+    {
+        // Arrange
+        $student = User::factory()->student()->create();
+        $otherStudent = User::factory()->student()->create();
+
+        $notification = $this->createNotification(
+            $otherStudent,
+            false,
+        );
+
+        // Act / Assert
+        $this->actingAs($student)
+            ->get(route('notifications.show', $notification))
+            ->assertForbidden();
+    }
+
     public function test_student_can_mark_own_notification_as_read(): void
     {
         // Arrange
@@ -193,6 +238,35 @@ class NotificationControllerTest extends TestCase
         $this->actingAs($student)
             ->post(route('notifications.markAsRead', $notification))
             ->assertRedirect($url);
+
+        $this->assertNotNull(
+            $notification->fresh()->read_at,
+        );
+    }
+
+    public function test_mark_as_read_without_url_redirects_to_notification_detail(): void
+    {
+        // Arrange
+        $student = User::factory()->student()->create();
+
+        $notification = $this->createNotificationWithoutUrl(
+            $student,
+            false,
+            [
+                'notification_type' => 'admin_announcement',
+                'title' => '運営からのお知らせ',
+                'message' => 'Certify LMS 運営チームからのお知らせ',
+                'body_preview' => null,
+                'body' => 'これは運営からのお知らせです。',
+            ],
+        );
+
+        // Act / Assert
+        $this->actingAs($student)
+            ->post(route('notifications.markAsRead', $notification))
+            ->assertRedirect(
+                route('notifications.show', $notification),
+            );
 
         $this->assertNotNull(
             $notification->fresh()->read_at,
@@ -265,6 +339,34 @@ class NotificationControllerTest extends TestCase
                 'title' => 'テスト通知',
                 'message' => null,
                 'url' => route('notifications.index'),
+            ], $data),
+            'read_at' => $read ? $createdAt : null,
+            'created_at' => $createdAt,
+            'updated_at' => $createdAt,
+        ]);
+    }
+
+    /**
+     * URL を持たないテスト用 Database Notification を作成する。
+     *
+     * @param array<string, mixed> $data
+     */
+    private function createNotificationWithoutUrl(
+        User $user,
+        bool $read,
+        array $data = [],
+    ): DatabaseNotification {
+        $createdAt = now();
+
+        return DatabaseNotification::create([
+            'id' => (string) Str::uuid(),
+            'type' => 'test-notification',
+            'notifiable_type' => User::class,
+            'notifiable_id' => $user->id,
+            'data' => array_merge([
+                'notification_type' => 'test',
+                'title' => 'テスト通知',
+                'message' => null,
             ], $data),
             'read_at' => $read ? $createdAt : null,
             'created_at' => $createdAt,
