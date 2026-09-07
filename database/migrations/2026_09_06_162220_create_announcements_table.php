@@ -28,9 +28,9 @@ return new class extends Migration
                 ->constrained('users')
                 ->restrictOnDelete();
 
-            $table->unsignedInteger('dispatched_count');
+            $table->unsignedInteger('dispatched_count')->default(0);
 
-            $table->timestamp('dispatched_at');
+            $table->timestamp('dispatched_at')->nullable();
 
             $table->foreignUlid('created_by_user_id')
                 ->constrained('users')

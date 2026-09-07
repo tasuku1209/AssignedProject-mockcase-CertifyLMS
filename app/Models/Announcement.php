@@ -26,6 +26,9 @@ class Announcement extends Model
         'target_type',
         'target_certification_id',
         'target_user_id',
+        'created_by_user_id',
+        'dispatched_count',
+        'dispatched_at',
     ];
 
     /**
@@ -33,13 +36,10 @@ class Announcement extends Model
      *
      * @return array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'target_type' => AnnouncementTargetType::class,
-            'dispatched_at' => 'datetime',
-        ];
-    }
+    protected $casts = [
+        'target_type' => AnnouncementTargetType::class,
+        'dispatched_at' => 'datetime',
+    ];
 
     /**
      * 配信対象の資格。
