@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Announcement\StoreRequest;
 use App\Models\Announcement;
 use App\UseCases\Announcement\CreateAction;
 use App\UseCases\Announcement\IndexAction;
 use App\UseCases\Announcement\ShowAction;
+use App\UseCases\Announcement\StoreAction;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class AnnouncementController extends Controller
@@ -46,5 +49,22 @@ class AnnouncementController extends Controller
         $this->authorize('create', Announcement::class);
 
         return view('announcement.management.create', $action());
+    }
+
+    /**
+     * お知らせを作成して配信する。
+     */
+    public function store(
+        StoreRequest $request,
+        StoreAction $action,
+    ): RedirectResponse {
+        $announcement = $action(
+            $request->user(),
+            $request->validated(),
+        );
+
+        return redirect()
+            ->route('admin.announcements.show', $announcement)
+            ->with('success', 'お知らせを配信しました。');
     }
 }

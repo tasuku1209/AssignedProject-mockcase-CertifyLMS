@@ -9,7 +9,7 @@ use App\Models\Announcement;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreAnnouncementRequest extends FormRequest
+class StoreRequest extends FormRequest
 {
     /**
      * お知らせを作成・配信できるか。
