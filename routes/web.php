@@ -573,13 +573,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 // ============================================================
 
 Route::middleware(['auth', 'role:student,coach', 'active-learning'])->group(function () {
-
     Route::get('notifications', [NotificationController::class, 'index'])
         ->name('notifications.index');
-
     Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])
         ->name('notifications.markAllAsRead');
-
+    Route::get('notifications/{notification}', [NotificationController::class, 'show'])
+        ->name('notifications.show');
     Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
         ->name('notifications.markAsRead');
 });
