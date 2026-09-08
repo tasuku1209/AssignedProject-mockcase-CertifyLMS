@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Policies\NotificationPolicy;
+use Illuminate\Notifications\DatabaseNotification;
 use App\Models\Certification;
 use App\Models\CertificationCategory;
 use App\Models\Chapter;
@@ -96,6 +98,7 @@ class AuthServiceProvider extends ServiceProvider
         QaThread::class => QaThreadPolicy::class,
         QaReply::class => QaReplyPolicy::class,
         MeetingPack::class => MeetingPackPolicy::class,
+        DatabaseNotification::class => NotificationPolicy::class,
     ];
 
     /**
