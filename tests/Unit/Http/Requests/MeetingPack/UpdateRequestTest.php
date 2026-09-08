@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Unit\Http\Requests\MeetingPack;
 
 use App\Http\Requests\MeetingPack\UpdateRequest;
+use App\Models\MeetingPack;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -90,6 +92,32 @@ class UpdateRequestTest extends TestCase
             $field,
             $validator->errors()->toArray(),
         );
+    }
+
+    public function test_authorize_denies_non_admin_to_update_meeting_pack(): void
+    {
+        // Arrange
+        $coach = User::factory()->coach()->create();
+        $meetingPack = MeetingPack::factory()->create();
+
+        // Act
+        $response = $this->actingAs($coach)
+            ->putJson(route('admin.meeting-packs.update', $meetingPack), [
+                'name' => '更新後の面談パック',
+                'description' => '更新後の説明',
+                'meeting_count' => 5,
+                'price' => 15000,
+                'stripe_price_id' => 'price_test_123',
+                'sort_order' => 1,
+            ]);
+
+        // Assert
+        $response->assertForbidden();
+
+        $this->assertDatabaseMissing('meeting_packs', [
+            'id' => $meetingPack->id,
+            'name' => '更新後の面談パック',
+        ]);
     }
 
     /**
