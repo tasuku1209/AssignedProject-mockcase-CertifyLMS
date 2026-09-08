@@ -268,14 +268,20 @@ class MeetingController extends Controller
                     ? $locked->coach
                     : $locked->student;
 
-                if (
-                    in_array(
-                        $recipient->role,
-                        [UserRole::Student, UserRole::Coach],
-                        true
-                    )
-                    && $recipient->status === UserStatus::InProgress
-                ) {
+                $shouldNotify = match ($recipient->role) {
+                    UserRole::Student => in_array(
+                        $recipient->status,
+                        [
+                            UserStatus::InProgress,
+                            UserStatus::Graduated,
+                        ],
+                        true,
+                    ),
+                    UserRole::Coach => $recipient->status === UserStatus::InProgress,
+                    default => false,
+                };
+
+                if ($shouldNotify) {
                     $recipient->notify(
                         new MeetingCanceledNotification($locked)
                     );
