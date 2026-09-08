@@ -561,7 +561,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 // 受講生・コーチ共有 — notifications
 // ============================================================
 
-Route::middleware(['auth', 'role:student,coach', 'active-learning'])->group(function () {
+Route::middleware(['auth', 'role:student,coach'])->group(function () {
 
     Route::get('notifications', [NotificationController::class, 'index'])
         ->name('notifications.index');
