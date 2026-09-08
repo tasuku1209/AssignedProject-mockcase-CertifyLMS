@@ -35,7 +35,7 @@ class SendMeetingReminders extends Command
             $this->sendReminder($meeting, $window);
         }
 
-        $this->info("{$meetings->count()}件の面談を処理しました。");
+        $this->info("{$meetings->count()}件の対象面談を確認しました。");
 
         return self::SUCCESS;
     }
@@ -55,8 +55,8 @@ class SendMeetingReminders extends Command
             'one_hour_before' => Meeting::query()
                 ->where('status', MeetingStatus::Reserved)
                 ->whereBetween('scheduled_at', [
-                    now()->addHour()->startOfMinute(),
-                    now()->addHour()->endOfMinute(),
+                    now()->addHour()->startOfHour(),
+                    now()->addHour()->endOfHour(),
                 ])
                 ->with(['student', 'coach'])
                 ->get(),

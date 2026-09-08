@@ -36,9 +36,9 @@ class Kernel extends ConsoleKernel
             ->dailyAt('09:00')
             ->withoutOverlapping(5);
 
-        // 面談開始 1 時間前のリマインダーを毎分チェックして配信
+        // 面談開始 1 時間前のリマインダーを毎時 00 分に配信
         $schedule->command('notifications:send-meeting-reminders --window=one_hour_before')
-            ->everyMinute()
+            ->hourly()
             ->withoutOverlapping(5);
     }
 
