@@ -35,6 +35,32 @@ class NotificationControllerTest extends TestCase
             ->assertViewHas('tab', 'all');
     }
 
+    public function test_graduated_student_can_view_own_notifications(): void
+    {
+        // Arrange
+        $student = User::factory()
+            ->student()
+            ->graduated()
+            ->create();
+
+        DatabaseNotification::create([
+            'id' => (string) Str::uuid(),
+            'type' => 'App\\Notifications\\TestNotification',
+            'notifiable_type' => User::class,
+            'notifiable_id' => $student->id,
+            'data' => [
+                'title' => '卒業後も確認できる通知',
+            ],
+            'read_at' => null,
+        ]);
+
+        // Act & Assert
+        $this->actingAs($student)
+            ->get(route('notifications.index'))
+            ->assertOk()
+            ->assertSee('卒業後も確認できる通知');
+    }
+
     public function test_notifications_are_ordered_newest_first(): void
     {
         // Arrange
