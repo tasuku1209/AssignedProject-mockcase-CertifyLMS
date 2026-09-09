@@ -44,4 +44,14 @@ class UpdateRequest extends FormRequest
             'description' => '詳細',
         ];
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'target_date.after_or_equal' => '目標期日には今日以降の日付を指定してください。',
+        ];
+    }
 }
