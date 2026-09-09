@@ -19,7 +19,14 @@ use Illuminate\Support\Facades\Hash;
  */
 class AvatarSeeder extends Seeder
 {
-    private const AVATAR_URL = '/storage/avatars/avatar.png';
+    private const ADMIN_AVATAR_URL = '/storage/avatars/admin-avatar-blue.png';
+
+    private const COACH_AVATAR_URL = '/storage/avatars/coach-avatar-yellow.png';
+
+    private const STUDENT_AVATAR_URL = '/storage/avatars/student-avatar-red.png';
+
+    private const GRADUATED_STUDENT_AVATAR_URL
+        = '/storage/avatars/student-graduated-avatar-green.png';
 
     public function run(): void
     {
@@ -55,22 +62,31 @@ class AvatarSeeder extends Seeder
             ])
             ->create();
 
-        // UserSeeder の固定ユーザー 3 名 + 本 Seeder で作成した修了済み受講生 1 名にアバターを設定する。
-        $fixedUsers->push($graduatedStudent);
-
+        // 固定ユーザー 3 名にそれぞれ対応するアバターを設定する。
         $this->attachAvatars($fixedUsers);
+
+        // 本 Seeder で作成した修了済み受講生にアバターを設定する。
+        $graduatedStudent->update([
+            'avatar_url' => self::GRADUATED_STUDENT_AVATAR_URL,
+        ]);
     }
 
     /**
-     * 指定されたユーザーにアバター画像を紐づける。
+     * 指定された固定ユーザーに、それぞれ対応するアバター画像を紐づける。
      *
      * @param Collection<int, User> $users
      */
     private function attachAvatars(Collection $users): void
     {
-        $users->each(function (User $user): void {
+        $avatarUrls = [
+            'admin@certify-lms.test' => self::ADMIN_AVATAR_URL,
+            'coach@certify-lms.test' => self::COACH_AVATAR_URL,
+            'student@certify-lms.test' => self::STUDENT_AVATAR_URL,
+        ];
+
+        $users->each(function (User $user) use ($avatarUrls): void {
             $user->update([
-                'avatar_url' => self::AVATAR_URL,
+                'avatar_url' => $avatarUrls[$user->email],
             ]);
         });
     }
