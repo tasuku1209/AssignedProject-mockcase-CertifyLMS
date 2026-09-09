@@ -12,6 +12,7 @@ use App\Enums\UserStatus;
 use App\Models\Certificate;
 use App\Models\Certification;
 use App\Models\Enrollment;
+use App\Models\EnrollmentGoal;
 use App\Models\EnrollmentStatusLog;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -143,6 +144,19 @@ final class EnrollmentSeeder extends Seeder
                 ],
             );
 
+            // 1件目の受講登録に、達成済み / 未達成の目標を1件ずつ投入
+            if ($index === 0) {
+                EnrollmentGoal::factory()
+                    ->for($enrollment)
+                    ->unachieved()
+                    ->create();
+
+                EnrollmentGoal::factory()
+                    ->for($enrollment)
+                    ->achieved()
+                    ->create();
+            }
+
             EnrollmentStatusLog::firstOrCreate(
                 ['enrollment_id' => $enrollment->id, 'to_status' => EnrollmentStatus::Learning->value],
                 [
@@ -199,6 +213,11 @@ final class EnrollmentSeeder extends Seeder
                     : now()->addDays($pattern['examDays'])->toDateString(),
                 'passed_at' => $passedAt,
             ]);
+
+            // 各デモ受講生のEnrollmentに個人目標を1件投入
+            EnrollmentGoal::factory()
+                ->for($enrollment)
+                ->create();
 
             $this->seedStatusLogs($enrollment, $pattern['state'], $student);
 

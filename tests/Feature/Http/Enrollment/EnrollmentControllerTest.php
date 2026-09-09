@@ -7,6 +7,7 @@ namespace Tests\Feature\Http\Enrollment;
 use App\Enums\EnrollmentStatus;
 use App\Models\Certification;
 use App\Models\Enrollment;
+use App\Models\EnrollmentGoal;
 use App\Models\MockExam;
 use App\Models\MockExamSession;
 use App\Models\User;
@@ -46,6 +47,140 @@ class EnrollmentControllerTest extends TestCase
 
         $response->assertOk();
         $response->assertViewIs('enrollment.show');
+    }
+
+    public function test_show_loads_attached_goals(): void
+    {
+        $student = User::factory()->student()->inProgress()->create();
+        $enrollment = Enrollment::factory()->for($student)->learning()->create();
+
+        EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '過去問を5年分解く',
+            ]);
+
+        EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '模擬試験で80点以上取る',
+            ]);
+
+        // 別Enrollmentの目標は混入しないことも確認
+        $otherEnrollment = Enrollment::factory()->learning()->create();
+        EnrollmentGoal::factory()
+            ->for($otherEnrollment)
+            ->create([
+                'title' => '別の受講登録の目標',
+            ]);
+
+        $response = $this->actingAs($student)
+            ->get(route('enrollments.show', $enrollment));
+
+        $response->assertOk();
+        $response->assertViewIs('enrollment.show');
+        $response->assertViewHas('enrollment', function (Enrollment $loadedEnrollment) {
+            return $loadedEnrollment->relationLoaded('goals')
+                && $loadedEnrollment->goals->count() === 2
+                && $loadedEnrollment->goals->contains('title', '過去問を5年分解く')
+                && $loadedEnrollment->goals->contains('title', '模擬試験で80点以上取る')
+                && ! $loadedEnrollment->goals->contains('title', '別の受講登録の目標');
+        });
+    }
+
+    public function test_show_orders_goals_by_achievement_target_date_and_created_at(): void
+    {
+        // Arrange
+        $student = User::factory()->student()->inProgress()->create();
+        $enrollment = Enrollment::factory()
+            ->for($student)
+            ->learning()
+            ->create();
+
+        // 未達成・期日あり（期日が早い）
+        $firstGoal = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '未達成・期日が早い',
+                'target_date' => '2026-10-01',
+                'achieved_at' => null,
+                'created_at' => now()->subDays(3),
+            ]);
+
+        // 未達成・期日あり（同じ期日、作成日時が新しい）
+        $secondGoal = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '未達成・同一期日で新しい',
+                'target_date' => '2026-10-01',
+                'achieved_at' => null,
+                'created_at' => now()->subDay(),
+            ]);
+
+        // 未達成・期日あり（期日が遅い）
+        $thirdGoal = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '未達成・期日が遅い',
+                'target_date' => '2026-11-01',
+                'achieved_at' => null,
+                'created_at' => now(),
+            ]);
+
+        // 未達成・期日なし
+        $fourthGoal = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '未達成・期日なし',
+                'target_date' => null,
+                'achieved_at' => null,
+            ]);
+
+        // 達成済み・期日あり
+        $fifthGoal = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '達成済み・期日あり',
+                'target_date' => '2026-09-01',
+                'achieved_at' => now()->subDay(),
+            ]);
+
+        // 達成済み・期日なし
+        $sixthGoal = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '達成済み・期日なし',
+                'target_date' => null,
+                'achieved_at' => now()->subHours(3),
+            ]);
+
+        // Act
+        $response = $this->actingAs($student)
+            ->get(route('enrollments.show', $enrollment));
+
+        // Assert
+        $response->assertOk();
+
+        $response->assertViewHas(
+            'enrollment',
+            function (Enrollment $loadedEnrollment) use (
+                $firstGoal,
+                $secondGoal,
+                $thirdGoal,
+                $fourthGoal,
+                $fifthGoal,
+                $sixthGoal,
+            ) {
+                return $loadedEnrollment->goals->pluck('id')->all() === [
+                    $secondGoal->id,
+                    $firstGoal->id,
+                    $thirdGoal->id,
+                    $fourthGoal->id,
+                    $fifthGoal->id,
+                    $sixthGoal->id,
+                ];
+            },
+        );
     }
 
     public function test_show_forbids_other_student(): void
@@ -184,6 +319,46 @@ class EnrollmentControllerTest extends TestCase
 
         $response->assertRedirect(route('enrollments.index'));
         $this->assertSoftDeleted('enrollments', ['id' => $enrollment->id]);
+    }
+
+    public function test_destroy_deletes_attached_goals(): void
+    {
+        $student = User::factory()->student()->inProgress()->create();
+        $enrollment = Enrollment::factory()
+            ->for($student)
+            ->learning()
+            ->create();
+
+        $goal1 = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '過去問を5年分解く',
+            ]);
+
+        $goal2 = EnrollmentGoal::factory()
+            ->for($enrollment)
+            ->create([
+                'title' => '模擬試験で80点以上取る',
+            ]);
+
+        $response = $this->actingAs($student)
+            ->delete(route('enrollments.destroy', $enrollment));
+
+        $response->assertRedirect(route('enrollments.index'));
+
+        // Enrollment 自体は SoftDelete
+        $this->assertSoftDeleted('enrollments', [
+            'id' => $enrollment->id,
+        ]);
+
+        // 紐づく Goal も削除される
+        $this->assertDatabaseMissing('enrollment_goals', [
+            'id' => $goal1->id,
+        ]);
+
+        $this->assertDatabaseMissing('enrollment_goals', [
+            'id' => $goal2->id,
+        ]);
     }
 
     public function test_destroy_rejects_other_student(): void
