@@ -23,7 +23,7 @@ class UpdateRequestTest extends TestCase
         // Arrange
         $payload = [
             'title' => '過去問5年分を解き終える',
-            'target_date' => '2026-10-01',
+            'target_date' => now()->addMonth()->format('Y-m-d'),
             'description' => '毎日少しずつ進める',
         ];
 
@@ -67,7 +67,7 @@ class UpdateRequestTest extends TestCase
         $payload = array_merge(
             [
                 'title' => '有効な目標',
-                'target_date' => '2026-10-01',
+                'target_date' => now()->addMonth()->format('Y-m-d'),
                 'description' => '有効な詳細',
             ],
             [$field => $value],
@@ -96,6 +96,10 @@ class UpdateRequestTest extends TestCase
             'title 空文字で エラー' => ['title', ''],
             'title 101 文字で エラー' => ['title', str_repeat('あ', 101)],
             'target_date 不正な日付で エラー' => ['target_date', 'invalid-date'],
+            'target_date 過去の日付で エラー' => [
+                'target_date',
+                now()->subDay()->format('Y-m-d'),
+            ],
             'description 1001 文字で エラー' => ['description', str_repeat('あ', 1001)],
         ];
     }
