@@ -17,6 +17,7 @@ use App\Http\Controllers\EnrollmentManagementController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\LearningHourTargetController;
 use App\Http\Controllers\MeetingController;
+use App\Http\Controllers\MeetingPackController;
 use App\Http\Controllers\MeetingQuotaHistoryController;
 use App\Http\Controllers\MockExamAnswerController;
 use App\Http\Controllers\MockExamCatalogController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\MockExamController;
 use App\Http\Controllers\MockExamQuestionController;
 use App\Http\Controllers\MockExamSessionController;
 use App\Http\Controllers\MockExamSessionMonitorController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PartController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\QaReplyController;
@@ -205,6 +207,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
         ->name('admin.plans.archive');
     Route::post('plans/{plan}/unarchive', [PlanController::class, 'unarchive'])
         ->name('admin.plans.unarchive');
+
+    // 面談パック管理(追加面談購入用 SKU、admin のみ)
+    Route::resource('meeting-packs', MeetingPackController::class)
+        ->parameters(['meeting-packs' => 'plan'])
+        ->names('admin.meeting-packs');
+
+    Route::post('meeting-packs/{plan}/publish', [MeetingPackController::class, 'publish'])
+        ->name('admin.meeting-packs.publish');
+
+    Route::post('meeting-packs/{plan}/archive', [MeetingPackController::class, 'archive'])
+        ->name('admin.meeting-packs.archive');
+
+    Route::post('meeting-packs/{plan}/unarchive', [MeetingPackController::class, 'unarchive'])
+        ->name('admin.meeting-packs.unarchive');
 });
 
 // ============================================================
@@ -565,4 +581,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
     Route::delete('qa-board/{thread}/replies/{reply}', [QaReplyController::class, 'destroy'])
         ->name('admin.qa-board.replies.destroy');
+});
+
+// ============================================================
+// 受講生・コーチ共有 — notifications
+// ============================================================
+
+Route::middleware(['auth', 'role:student,coach'])->group(function () {
+
+    Route::get('notifications', [NotificationController::class, 'index'])
+        ->name('notifications.index');
+
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])
+        ->name('notifications.markAllAsRead');
+
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
+        ->name('notifications.markAsRead');
 });
