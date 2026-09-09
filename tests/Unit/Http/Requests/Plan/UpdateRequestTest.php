@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Unit\Http\Requests\Plan;
 
 use App\Http\Requests\Plan\UpdateRequest;
+use App\Models\Plan;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -72,6 +74,26 @@ class UpdateRequestTest extends TestCase
         // Assert
         $this->assertFalse($validator->passes());
         $this->assertArrayHasKey($field, $validator->errors()->toArray());
+    }
+
+    public function test_authorize_returns_false_for_non_admin(): void
+    {
+        // Arrange
+        $coach = User::factory()->coach()->create();
+        $plan = Plan::factory()->create();
+
+        // Act
+        $response = $this->actingAs($coach)->putJson(
+            route('admin.plans.update', $plan),
+            [
+                'name' => 'Updated Plan',
+                'duration_days' => 90,
+                'default_meeting_quota' => 12,
+            ],
+        );
+
+        // Assert
+        $response->assertForbidden();
     }
 
     /**
