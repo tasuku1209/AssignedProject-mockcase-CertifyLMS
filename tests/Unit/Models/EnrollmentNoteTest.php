@@ -39,7 +39,7 @@ class EnrollmentNoteTest extends TestCase
         // Arrange
         $author = User::factory()->coach()->create();
         $note = EnrollmentNote::factory()
-            ->forCoach($author)
+            ->forAuthor($author)
             ->create();
 
         // Act
