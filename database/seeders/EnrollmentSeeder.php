@@ -13,6 +13,7 @@ use App\Models\Certificate;
 use App\Models\Certification;
 use App\Models\Enrollment;
 use App\Models\EnrollmentGoal;
+use App\Models\EnrollmentNote;
 use App\Models\EnrollmentStatusLog;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -157,6 +158,24 @@ final class EnrollmentSeeder extends Seeder
                     ->create();
             }
 
+            // 資格の担当コーチにメモを投入
+            $coaches = $certification->coaches;
+
+            foreach ($coaches as $coach) {
+                EnrollmentNote::factory()
+                    ->forEnrollment($enrollment)
+                    ->forAuthor($coach)
+                    ->create();
+            }
+
+            // 管理者にもメモを1件投入
+            if ($admin !== null) {
+                EnrollmentNote::factory()
+                    ->forEnrollment($enrollment)
+                    ->forAuthor($admin)
+                    ->create();
+            }
+
             EnrollmentStatusLog::firstOrCreate(
                 ['enrollment_id' => $enrollment->id, 'to_status' => EnrollmentStatus::Learning->value],
                 [
@@ -218,6 +237,19 @@ final class EnrollmentSeeder extends Seeder
             EnrollmentGoal::factory()
                 ->for($enrollment)
                 ->create();
+
+            // 資格の担当コーチに1～2件のメモを投入
+            $coaches = $certification->coaches;
+
+            foreach ($coaches as $coach) {
+                $noteCount = fake()->numberBetween(1, 2);
+
+                EnrollmentNote::factory()
+                    ->count($noteCount)
+                    ->forEnrollment($enrollment)
+                    ->forAuthor($coach)
+                    ->create();
+            }
 
             $this->seedStatusLogs($enrollment, $pattern['state'], $student);
 

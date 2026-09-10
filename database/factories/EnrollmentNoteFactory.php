@@ -48,12 +48,12 @@ class EnrollmentNoteFactory extends Factory
     }
 
     /**
-     * 作成者のコーチを指定する。
+     * 作成者を指定する。
      */
-    public function forCoach(User $coach): static
+    public function forAuthor(User $author): static
     {
         return $this->state(fn () => [
-            'user_id' => $coach->id,
+            'user_id' => $author->id,
         ]);
     }
 }
