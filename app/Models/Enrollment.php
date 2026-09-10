@@ -144,6 +144,16 @@ class Enrollment extends Model
     }
 
     /**
+     * 受講登録に紐づくコーチメモ一覧。
+     *
+     * @return HasMany<EnrollmentNote, $this>
+     */
+    public function notes(): HasMany
+    {
+        return $this->hasMany(EnrollmentNote::class);
+    }
+
+    /**
      * @return HasMany<EnrollmentGoal, $this>
      */
     public function goals(): HasMany
