@@ -91,7 +91,7 @@ class EnrollmentNotePolicyTest extends TestCase
 
         $note = EnrollmentNote::factory()
             ->forEnrollment($enrollment)
-            ->forCoach($author)
+            ->forAuthor($author)
             ->create();
 
         $policy = new EnrollmentNotePolicy;
@@ -129,7 +129,7 @@ class EnrollmentNotePolicyTest extends TestCase
 
         $note = EnrollmentNote::factory()
             ->forEnrollment($enrollment)
-            ->forCoach($coach)
+            ->forAuthor($coach)
             ->create();
 
         $enrollment->delete();
