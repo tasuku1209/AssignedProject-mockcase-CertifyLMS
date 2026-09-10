@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Policies\NotificationPolicy;
+use Illuminate\Notifications\DatabaseNotification;
 use App\Models\Certification;
 use App\Models\CertificationCategory;
 use App\Models\Chapter;
@@ -15,10 +17,12 @@ use App\Models\Invitation;
 use App\Models\LearningHourTarget;
 use App\Models\LearningSession;
 use App\Models\Meeting;
+use App\Models\MeetingPack;
 use App\Models\MockExam;
 use App\Models\MockExamQuestion;
 use App\Models\MockExamSession;
 use App\Models\Part;
+use App\Models\Plan;
 use App\Models\QaReply;
 use App\Models\QaThread;
 use App\Models\QuestionCategory;
@@ -40,6 +44,7 @@ use App\Policies\EnrollmentPolicy;
 use App\Policies\InvitationPolicy;
 use App\Policies\LearningHourTargetPolicy;
 use App\Policies\LearningSessionPolicy;
+use App\Policies\MeetingPackPolicy;
 use App\Policies\MeetingPolicy;
 use App\Policies\MeetingQuotaPolicy;
 use App\Policies\MockExamPolicy;
@@ -47,6 +52,7 @@ use App\Policies\MockExamQuestionPolicy;
 use App\Policies\MockExamSessionPolicy;
 use App\Policies\PartPolicy;
 use App\Policies\PartViewPolicy;
+use App\Policies\PlanPolicy;
 use App\Policies\QaReplyPolicy;
 use App\Policies\QaThreadPolicy;
 use App\Policies\QuestionCategoryPolicy;
@@ -58,6 +64,7 @@ use App\Policies\SectionQuestionAttemptPolicy;
 use App\Policies\SectionQuestionPolicy;
 use App\Policies\SectionQuizPolicy;
 use App\Policies\SectionViewPolicy;
+use App\Policies\SettingsPolicy;
 use App\Policies\UserPolicy;
 use App\Policies\WeakDrillPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
@@ -96,6 +103,9 @@ class AuthServiceProvider extends ServiceProvider
         CoachAvailability::class => CoachAvailabilityPolicy::class,
         QaThread::class => QaThreadPolicy::class,
         QaReply::class => QaReplyPolicy::class,
+        Plan::class => PlanPolicy::class,
+        MeetingPack::class => MeetingPackPolicy::class,
+        DatabaseNotification::class => NotificationPolicy::class,
     ];
 
     /**
@@ -118,5 +128,14 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('quiz.section.view', [SectionQuizPolicy::class, 'view']);
         Gate::define('quiz.weak-drill.view', [WeakDrillPolicy::class, 'view']);
         Gate::define('quiz.answer.create', [SectionQuestionAnswerPolicy::class, 'create']);
+
+        // User モデルには既存の UserPolicy が auto-bind されているため、
+        // ユーザー設定画面の本人操作権限は UserPolicy と分離し、
+        // 別 Gate 名で SettingsPolicy に登録する。
+        Gate::define('settings.profile.view', [SettingsPolicy::class, 'view']);
+        Gate::define('settings.profile.update', [SettingsPolicy::class, 'updateProfile']);
+        Gate::define('settings.avatar.store', [SettingsPolicy::class, 'storeAvatar']);
+        Gate::define('settings.avatar.delete', [SettingsPolicy::class, 'deleteAvatar']);
+        Gate::define('settings.password.update', [SettingsPolicy::class, 'updatePassword']);
     }
 }

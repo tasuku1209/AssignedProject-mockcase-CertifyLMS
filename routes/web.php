@@ -13,11 +13,13 @@ use App\Http\Controllers\ChatRoomController;
 use App\Http\Controllers\ContentSearchController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EnrollmentController;
+use App\Http\Controllers\EnrollmentGoalController;
 use App\Http\Controllers\EnrollmentManagementController;
 use App\Http\Controllers\EnrollmentNoteController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\LearningHourTargetController;
 use App\Http\Controllers\MeetingController;
+use App\Http\Controllers\MeetingPackController;
 use App\Http\Controllers\MeetingQuotaHistoryController;
 use App\Http\Controllers\MockExamAnswerController;
 use App\Http\Controllers\MockExamCatalogController;
@@ -25,7 +27,9 @@ use App\Http\Controllers\MockExamController;
 use App\Http\Controllers\MockExamQuestionController;
 use App\Http\Controllers\MockExamSessionController;
 use App\Http\Controllers\MockExamSessionMonitorController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PartController;
+use App\Http\Controllers\PlanController;
 use App\Http\Controllers\QaReplyController;
 use App\Http\Controllers\QaThreadController;
 use App\Http\Controllers\QuestionCategoryController;
@@ -40,6 +44,9 @@ use App\Http\Controllers\SectionQuestionController;
 use App\Http\Controllers\SectionQuizController;
 use App\Http\Controllers\SectionQuizResultController;
 use App\Http\Controllers\Settings\AvailabilityController as SettingsAvailabilityController;
+use App\Http\Controllers\Settings\AvatarController;
+use App\Http\Controllers\Settings\PasswordController;
+use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
@@ -76,6 +83,22 @@ Route::middleware('auth')->group(function () {
     Route::get('enrollments/{enrollment}', [EnrollmentController::class, 'show'])
         ->withTrashed()
         ->name('enrollments.show');
+
+    // プロフィール
+    Route::get('/settings/profile', [ProfileController::class, 'edit'])
+        ->name('settings.profile.edit');
+    Route::patch('/settings/profile', [ProfileController::class, 'update'])
+        ->name('settings.profile.update');
+
+    // パスワード変更
+    Route::put('/settings/password', [PasswordController::class, 'update'])
+        ->name('settings.password.update');
+
+    // アバター
+    Route::post('/settings/avatar', [AvatarController::class, 'store'])
+        ->name('settings.avatar.store');
+    Route::delete('/settings/avatar', [AvatarController::class, 'destroy'])
+        ->name('settings.avatar.destroy');
 });
 
 // ============================================================
@@ -112,6 +135,31 @@ Route::middleware(['auth', 'role:student', 'active-learning'])
     ->group(function () {
         Route::put('default-enrollment/{enrollment}', [SettingsDefaultEnrollmentController::class, 'update'])
             ->name('default-enrollment.update');
+    });
+
+// ============================================================
+// 受講生専用ルート — 個人目標の追加 / 編集 / 削除 / 達成管理
+// ============================================================
+Route::middleware(['auth', 'role:student', 'active-learning'])
+    ->group(function () {
+        // 個人目標
+        Route::post('enrollments/{enrollment}/goals', [EnrollmentGoalController::class, 'store'])
+            ->name('enrollments.goals.store');
+
+        Route::get('enrollment-goals/{goal}/edit', [EnrollmentGoalController::class, 'edit'])
+            ->name('enrollment-goals.edit');
+
+        Route::patch('enrollment-goals/{goal}', [EnrollmentGoalController::class, 'update'])
+            ->name('enrollment-goals.update');
+
+        Route::delete('enrollment-goals/{goal}', [EnrollmentGoalController::class, 'destroy'])
+            ->name('enrollment-goals.destroy');
+
+        Route::post('enrollment-goals/{goal}/achieve', [EnrollmentGoalController::class, 'markAchieved'])
+            ->name('enrollment-goals.markAchieved');
+
+        Route::delete('enrollment-goals/{goal}/achieve', [EnrollmentGoalController::class, 'unmarkAchieved'])
+            ->name('enrollment-goals.unmarkAchieved');
     });
 
 // ============================================================
@@ -195,6 +243,30 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
         ->name('admin.enrollments.updateExamDate');
     Route::post('enrollments/{enrollment}/fail', [EnrollmentManagementController::class, 'fail'])
         ->name('admin.enrollments.fail');
+
+    // プラン管理
+    Route::resource('plans', PlanController::class)
+        ->names('admin.plans');
+    Route::post('plans/{plan}/publish', [PlanController::class, 'publish'])
+        ->name('admin.plans.publish');
+    Route::post('plans/{plan}/archive', [PlanController::class, 'archive'])
+        ->name('admin.plans.archive');
+    Route::post('plans/{plan}/unarchive', [PlanController::class, 'unarchive'])
+        ->name('admin.plans.unarchive');
+
+    // 面談パック管理(追加面談購入用 SKU、admin のみ)
+    Route::resource('meeting-packs', MeetingPackController::class)
+        ->parameters(['meeting-packs' => 'plan'])
+        ->names('admin.meeting-packs');
+
+    Route::post('meeting-packs/{plan}/publish', [MeetingPackController::class, 'publish'])
+        ->name('admin.meeting-packs.publish');
+
+    Route::post('meeting-packs/{plan}/archive', [MeetingPackController::class, 'archive'])
+        ->name('admin.meeting-packs.archive');
+
+    Route::post('meeting-packs/{plan}/unarchive', [MeetingPackController::class, 'unarchive'])
+        ->name('admin.meeting-packs.unarchive');
 });
 
 // ============================================================
@@ -570,4 +642,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
     Route::delete('qa-board/{thread}/replies/{reply}', [QaReplyController::class, 'destroy'])
         ->name('admin.qa-board.replies.destroy');
+});
+
+// ============================================================
+// 受講生・コーチ共有 — notifications
+// ============================================================
+
+Route::middleware(['auth', 'role:student,coach'])->group(function () {
+
+    Route::get('notifications', [NotificationController::class, 'index'])
+        ->name('notifications.index');
+
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])
+        ->name('notifications.markAllAsRead');
+
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
+        ->name('notifications.markAsRead');
 });
