@@ -6,12 +6,15 @@ namespace Tests\Feature\Http\Enrollment;
 
 use App\Enums\EnrollmentStatus;
 use App\Models\Certification;
+use App\Models\CertificationCoachAssignment;
 use App\Models\Enrollment;
 use App\Models\EnrollmentGoal;
+use App\Models\EnrollmentNote;
 use App\Models\MockExam;
 use App\Models\MockExamSession;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -181,6 +184,99 @@ class EnrollmentControllerTest extends TestCase
                 ];
             },
         );
+    }
+
+    public function test_show_displays_enrollment_notes_in_newest_first_order(): void
+    {
+        // Arrange
+        $coach = User::factory()->coach()->create();
+        $enrollment = Enrollment::factory()->learning()->create();
+
+        $this->assignCoach($coach, $enrollment->certification);
+
+        $oldNote = EnrollmentNote::factory()
+            ->forEnrollment($enrollment)
+            ->forAuthor($coach)
+            ->create([
+                'body' => '古いメモです。',
+                'created_at' => now()->subHours(2),
+            ]);
+
+        $newNote = EnrollmentNote::factory()
+            ->forEnrollment($enrollment)
+            ->forAuthor($coach)
+            ->create([
+                'body' => '新しいメモです。',
+                'created_at' => now()->subHour(),
+            ]);
+
+        // Act
+        $response = $this->actingAs($coach)
+            ->get(route('enrollments.show', $enrollment));
+
+        // Assert
+        $response->assertOk();
+
+        $response->assertSeeInOrder([
+            '新しいメモです。',
+            '古いメモです。',
+        ]);
+    }
+
+    public function test_show_does_not_display_enrollment_notes_to_student(): void
+    {
+        // Arrange
+        $student = User::factory()->student()->inProgress()->create();
+        $enrollment = Enrollment::factory()
+            ->for($student)
+            ->learning()
+            ->create();
+
+        $note = EnrollmentNote::factory()
+            ->forEnrollment($enrollment)
+            ->create([
+                'body' => '受講生には見せないメモです。',
+            ]);
+
+        // Act
+        $response = $this->actingAs($student)
+            ->get(route('enrollments.show', $enrollment));
+
+        // Assert
+        $response
+            ->assertOk()
+            ->assertDontSee('コーチメモ')
+            ->assertDontSee('受講生には見せないメモです。');
+    }
+
+    public function test_show_does_not_display_enrollment_notes_when_enrollment_is_soft_deleted(): void
+    {
+        // Arrange
+        $coach = User::factory()->coach()->create();
+        $enrollment = Enrollment::factory()
+            ->learning()
+            ->create();
+
+        $this->assignCoach($coach, $enrollment->certification);
+
+        EnrollmentNote::factory()
+            ->forEnrollment($enrollment)
+            ->forAuthor($coach)
+            ->create([
+                'body' => '削除済み受講登録のメモです。',
+            ]);
+
+        $enrollment->delete();
+
+        // Act
+        $response = $this->actingAs($coach)
+            ->get(route('enrollments.show', $enrollment));
+
+        // Assert
+        $response
+            ->assertOk()
+            ->assertDontSee('コーチメモ')
+            ->assertDontSee('削除済み受講登録のメモです。');
     }
 
     public function test_show_forbids_other_student(): void
@@ -458,5 +554,20 @@ class EnrollmentControllerTest extends TestCase
 
         // active-learning Middleware で 403
         $response->assertForbidden();
+    }
+
+    private function assignCoach(
+        User $coach,
+        Certification $certification,
+    ): void {
+        $admin = User::factory()->admin()->create();
+
+        CertificationCoachAssignment::create([
+            'id' => (string) Str::ulid(),
+            'certification_id' => $certification->id,
+            'user_id' => $coach->id,
+            'assigned_by_user_id' => $admin->id,
+            'assigned_at' => now(),
+        ]);
     }
 }
