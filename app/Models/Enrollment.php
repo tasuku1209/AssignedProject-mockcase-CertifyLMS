@@ -143,6 +143,24 @@ class Enrollment extends Model
         return $this->hasOne(LearningHourTarget::class);
     }
 
+    /**
+     * 受講登録に紐づくコーチメモ一覧。
+     *
+     * @return HasMany<EnrollmentNote, $this>
+     */
+    public function notes(): HasMany
+    {
+        return $this->hasMany(EnrollmentNote::class);
+    }
+
+    /**
+     * @return HasMany<EnrollmentGoal, $this>
+     */
+    public function goals(): HasMany
+    {
+        return $this->hasMany(EnrollmentGoal::class);
+    }
+
     public function scopeLearning(Builder $query): Builder
     {
         return $query->where('status', EnrollmentStatus::Learning->value);
@@ -170,7 +188,10 @@ class Enrollment extends Model
     {
         return match ($user->role) {
             UserRole::Admin => $query,
-            UserRole::Coach => $query,
+            UserRole::Coach => $query->whereIn(
+                'certification_id',
+                $user->assignedCertifications()->select('certifications.id'),
+            ),
             UserRole::Student => $query->where('user_id', $user->id),
             default => $query->whereRaw('1 = 0'),
         };
