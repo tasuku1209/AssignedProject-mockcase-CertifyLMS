@@ -45,7 +45,7 @@ use App\Http\Controllers\SectionQuizController;
 use App\Http\Controllers\SectionQuizResultController;
 use App\Http\Controllers\Settings\AvailabilityController as SettingsAvailabilityController;
 use App\Http\Controllers\Settings\AvatarController;
-use App\Http\Controllers\Settings\GoogleCalendarController;
+use App\Http\Controllers\Settings\GoogleCredentialController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
@@ -110,11 +110,11 @@ Route::middleware(['auth', 'role:coach', 'active-learning'])
     ->prefix('settings/google-calendar')
     ->name('settings.google-calendar.')
     ->group(function () {
-        Route::get('/connect', [GoogleCalendarController::class, 'redirect'])
+        Route::get('/connect', [GoogleCredentialController::class, 'redirect'])
             ->name('redirect');
-        Route::get('/callback', [GoogleCalendarController::class, 'callback'])
+        Route::get('/callback', [GoogleCredentialController::class, 'callback'])
             ->name('callback');
-        Route::delete('/', [GoogleCalendarController::class, 'destroy'])
+        Route::delete('/', [GoogleCredentialController::class, 'destroy'])
             ->name('destroy');
     });
 
