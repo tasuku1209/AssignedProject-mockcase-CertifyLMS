@@ -45,6 +45,7 @@ use App\Http\Controllers\SectionQuizController;
 use App\Http\Controllers\SectionQuizResultController;
 use App\Http\Controllers\Settings\AvailabilityController as SettingsAvailabilityController;
 use App\Http\Controllers\Settings\AvatarController;
+use App\Http\Controllers\Settings\GoogleCalendarController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
@@ -100,6 +101,22 @@ Route::middleware('auth')->group(function () {
     Route::delete('/settings/avatar', [AvatarController::class, 'destroy'])
         ->name('settings.avatar.destroy');
 });
+
+// ============================================================
+// コーチ専用ルート — Google Calendar 連携
+// ============================================================
+
+Route::middleware(['auth', 'role:coach', 'active-learning'])
+    ->prefix('settings/google-calendar')
+    ->name('settings.google-calendar.')
+    ->group(function () {
+        Route::get('/connect', [GoogleCalendarController::class, 'redirect'])
+            ->name('redirect');
+        Route::get('/callback', [GoogleCalendarController::class, 'callback'])
+            ->name('callback');
+        Route::delete('/', [GoogleCalendarController::class, 'destroy'])
+            ->name('destroy');
+    });
 
 // ============================================================
 // 受講生専用ルート(受講中ステータスのみ通過、卒業ステータスはロック)

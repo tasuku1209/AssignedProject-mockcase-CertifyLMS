@@ -11,6 +11,7 @@ use App\Models\ChatRoom;
 use App\Models\CoachAvailability;
 use App\Models\Enrollment;
 use App\Models\EnrollmentNote;
+use App\Models\GoogleCredential;
 use App\Models\Invitation;
 use App\Models\LearningHourTarget;
 use App\Models\LearningSession;
@@ -39,6 +40,7 @@ use App\Policies\ChatRoomPolicy;
 use App\Policies\CoachAvailabilityPolicy;
 use App\Policies\EnrollmentNotePolicy;
 use App\Policies\EnrollmentPolicy;
+use App\Policies\GoogleCredentialPolicy;
 use App\Policies\InvitationPolicy;
 use App\Policies\LearningHourTargetPolicy;
 use App\Policies\LearningSessionPolicy;
@@ -106,6 +108,7 @@ class AuthServiceProvider extends ServiceProvider
         Plan::class => PlanPolicy::class,
         MeetingPack::class => MeetingPackPolicy::class,
         DatabaseNotification::class => NotificationPolicy::class,
+        GoogleCredential::class => GoogleCredentialPolicy::class,
     ];
 
     /**
