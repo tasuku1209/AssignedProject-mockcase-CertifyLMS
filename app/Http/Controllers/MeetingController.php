@@ -270,6 +270,7 @@ class MeetingController extends Controller
     public function cancel(
         Meeting $meeting,
         RefundQuotaAction $refundAction,
+        GoogleCalendarService $googleCalendarService,
     ): RedirectResponse {
         $this->authorize('cancel', $meeting);
 
@@ -318,6 +319,26 @@ class MeetingController extends Controller
                 }
             });
         });
+
+        $meeting->loadMissing('coach.googleCredential');
+
+        $credential = $meeting->coach->googleCredential;
+
+        if (
+            $credential !== null
+            && $meeting->google_event_id !== null
+        ) {
+            try {
+                $googleCalendarService->deleteEvent(
+                    credential: $credential,
+                    eventId: $meeting->google_event_id,
+                );
+            } catch (
+                GoogleOAuthTokenException|GoogleServiceException $e
+            ) {
+                report($e);
+            }
+        }
 
         return redirect()
             ->route('meetings.show', $meeting)

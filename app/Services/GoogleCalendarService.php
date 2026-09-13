@@ -181,6 +181,20 @@ final class GoogleCalendarService
         return $createdEvent->getId();
     }
 
+    public function deleteEvent(
+        GoogleCredential $credential,
+        string $eventId,
+    ): void {
+        $client = $this->createAuthenticatedClient($credential);
+
+        $calendarService = new Calendar($client);
+
+        $calendarService->events->delete(
+            $credential->calendar_id,
+            $eventId,
+        );
+    }
+
     /**
      * Google Calendar APIで利用可能な認証済みClientを生成する。
      *
