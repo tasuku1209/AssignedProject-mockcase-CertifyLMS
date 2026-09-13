@@ -8,6 +8,7 @@ use App\Enums\EnrollmentStatus;
 use App\Enums\MeetingStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Exceptions\GoogleCalendar\GoogleOAuthTokenException;
 use App\Exceptions\MeetingQuota\InsufficientMeetingQuotaException;
 use App\Exceptions\Mentoring\MeetingAlreadyStartedException;
 use App\Exceptions\Mentoring\MeetingNoAvailableCoachException;
@@ -25,11 +26,13 @@ use App\Models\User;
 use App\Notifications\MeetingCanceledNotification;
 use App\Notifications\MeetingReservedNotification;
 use App\Services\CoachMeetingLoadService;
+use App\Services\GoogleCalendarService;
 use App\Services\MeetingAvailabilityService;
 use App\Services\MeetingQuotaService;
 use App\UseCases\MeetingQuota\ConsumeQuotaAction;
 use App\UseCases\MeetingQuota\RefundQuotaAction;
 use Carbon\Carbon;
+use Google\Service\Exception as GoogleServiceException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -171,6 +174,7 @@ class MeetingController extends Controller
         CoachMeetingLoadService $coachLoadService,
         MeetingQuotaService $quotaService,
         ConsumeQuotaAction $consumeAction,
+        GoogleCalendarService $googleCalendarService,
     ): RedirectResponse {
         $scheduledAt = Carbon::parse($request->validated('scheduled_at'));
         $topic = $request->validated('topic');
@@ -229,6 +233,30 @@ class MeetingController extends Controller
 
             return $meeting->fresh();
         });
+
+        $meeting->loadMissing('coach.googleCredential');
+
+        $credential = $meeting->coach->googleCredential;
+
+        if ($credential !== null) {
+            try {
+                $googleEventId = $googleCalendarService->createEvent(
+                    credential: $credential,
+                    summary: '面談：'.$meeting->student->name,
+                    start: $meeting->scheduled_at,
+                    end: $meeting->scheduled_at->copy()->addHour(),
+                    meetingUrl: $meeting->meeting_url_snapshot,
+                );
+
+                $meeting->update([
+                    'google_event_id' => $googleEventId,
+                ]);
+            } catch (
+                GoogleOAuthTokenException|GoogleServiceException $e
+            ) {
+                report($e);
+            }
+        }
 
         return redirect()
             ->route('meetings.show', $meeting)
