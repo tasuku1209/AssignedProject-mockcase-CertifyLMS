@@ -16,7 +16,11 @@ use Google\Service\Calendar\FreeBusyRequest;
 use Google\Service\Calendar\FreeBusyRequestItem;
 use Illuminate\Support\Str;
 
-final class GoogleCalendarService
+/**
+ * final 不採用: Google Calendar API への実通信を行わずに
+ * 呼出側 Service のテストでモック化できるようにするため。
+ */
+class GoogleCalendarService
 {
     /**
      * Google Calendar OAuth 認証画面のURLを生成する。
