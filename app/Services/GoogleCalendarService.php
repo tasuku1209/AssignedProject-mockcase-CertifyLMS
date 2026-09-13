@@ -110,6 +110,7 @@ final class GoogleCalendarService
         $client->setScopes([
             'https://www.googleapis.com/auth/calendar.events.owned',
             'https://www.googleapis.com/auth/calendar.events.freebusy',
+            'https://www.googleapis.com/auth/calendar.calendars.readonly',
         ]);
 
         $client->setAccessType('offline');

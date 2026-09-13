@@ -103,22 +103,6 @@ Route::middleware('auth')->group(function () {
 });
 
 // ============================================================
-// コーチ専用ルート — Google Calendar 連携
-// ============================================================
-
-Route::middleware(['auth', 'role:coach', 'active-learning'])
-    ->prefix('settings/google-calendar')
-    ->name('settings.google-calendar.')
-    ->group(function () {
-        Route::get('/connect', [GoogleCredentialController::class, 'redirect'])
-            ->name('redirect');
-        Route::get('/callback', [GoogleCredentialController::class, 'callback'])
-            ->name('callback');
-        Route::delete('/', [GoogleCredentialController::class, 'destroy'])
-            ->name('destroy');
-    });
-
-// ============================================================
 // 受講生専用ルート(受講中ステータスのみ通過、卒業ステータスはロック)
 // ============================================================
 Route::middleware(['auth', 'role:student', 'active-learning'])->group(function () {
@@ -563,6 +547,22 @@ Route::middleware(['auth', 'role:coach'])
         Route::post('/', [SettingsAvailabilityController::class, 'store'])->name('store');
         Route::patch('{availability}', [SettingsAvailabilityController::class, 'update'])->name('update');
         Route::delete('{availability}', [SettingsAvailabilityController::class, 'destroy'])->name('destroy');
+    });
+
+// ============================================================
+// コーチ専用ルート — Google Calendar 連携
+// ============================================================
+
+Route::middleware(['auth', 'role:coach', 'active-learning'])
+    ->prefix('settings/google-calendar')
+    ->name('settings.google-calendar.')
+    ->group(function () {
+        Route::get('/connect', [GoogleCredentialController::class, 'redirect'])
+            ->name('redirect');
+        Route::get('/callback', [GoogleCredentialController::class, 'callback'])
+            ->name('callback');
+        Route::delete('/', [GoogleCredentialController::class, 'destroy'])
+            ->name('destroy');
     });
 
 // ============================================================

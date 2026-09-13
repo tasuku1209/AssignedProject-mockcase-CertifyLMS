@@ -58,7 +58,7 @@ class GoogleCredentialController extends Controller
         );
 
         return redirect()
-            ->route('settings.profile.edit')
+            ->route('settings.availability.index')
             ->with('success', 'Google Calendarを連携しました。');
     }
 
@@ -78,7 +78,7 @@ class GoogleCredentialController extends Controller
         $action($credential);
 
         return redirect()
-            ->route('settings.profile.edit')
+            ->route('settings.availability.index')
             ->with('success', 'Google Calendarの連携を解除しました。');
     }
 }
