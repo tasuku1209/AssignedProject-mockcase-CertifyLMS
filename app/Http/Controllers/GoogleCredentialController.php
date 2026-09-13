@@ -2,10 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Settings;
+namespace App\Http\Controllers;
 
 use App\Exceptions\GoogleCalendar\InvalidOAuthStateException;
-use App\Http\Controllers\Controller;
 use App\Models\GoogleCredential;
 use App\Services\GoogleCalendarService;
 use App\UseCases\GoogleCredential\DestroyAction;
