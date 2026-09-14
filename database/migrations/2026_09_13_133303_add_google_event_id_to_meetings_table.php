@@ -14,7 +14,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('meetings', function (Blueprint $table) {
-            $table->string('google_event_id')->nullable()->after('meeting_url_snapshot');
+            $table->string('google_event_id', 255)->nullable()->after('meeting_url_snapshot');
         });
     }
 
