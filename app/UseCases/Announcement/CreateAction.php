@@ -36,7 +36,6 @@ class CreateAction
                 ->where('role', UserRole::Student->value)
                 ->whereIn('status', [
                     UserStatus::InProgress->value,
-                    UserStatus::Graduated->value,
                 ])
                 ->orderBy('name')
                 ->get(),

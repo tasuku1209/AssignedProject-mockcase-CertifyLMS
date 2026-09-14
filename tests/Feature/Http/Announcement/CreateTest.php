@@ -68,7 +68,7 @@ class CreateTest extends TestCase
         );
     }
 
-    public function test_create_page_contains_only_in_progress_or_graduated_students(): void
+    public function test_create_page_contains_only_in_progress_students(): void
     {
         // Arrange
         $admin = User::factory()->admin()->create();
@@ -108,7 +108,7 @@ class CreateTest extends TestCase
             $students->contains('id', $inProgress->id)
         );
 
-        $this->assertTrue(
+        $this->assertFalse(
             $students->contains('id', $graduated->id)
         );
 
@@ -149,7 +149,7 @@ class CreateTest extends TestCase
             ->student()
             ->create([
                 'name' => '佐藤花子',
-                'status' => UserStatus::Graduated->value,
+                'status' => UserStatus::InProgress->value,
             ]);
 
         // Act

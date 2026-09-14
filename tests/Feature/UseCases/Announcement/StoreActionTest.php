@@ -58,7 +58,7 @@ class StoreActionTest extends TestCase
             'target_certification_id' => null,
             'target_user_id' => null,
             'created_by_user_id' => $admin->id,
-            'dispatched_count' => 3,
+            'dispatched_count' => 2,
         ]);
 
         $this->assertNotNull(
@@ -75,7 +75,7 @@ class StoreActionTest extends TestCase
             AdminAnnouncementNotification::class,
         );
 
-        Notification::assertSentTo(
+        Notification::assertNotSentTo(
             $graduatedStudent,
             AdminAnnouncementNotification::class,
         );
@@ -96,7 +96,7 @@ class StoreActionTest extends TestCase
         );
     }
 
-    public function test_dispatches_only_students_with_target_certification_and_valid_enrollment_status(): void
+    public function test_dispatches_only_in_progress_students_with_learning_enrollment_for_target_certification(): void
     {
         // Arrange
         Notification::fake();
@@ -124,7 +124,7 @@ class StoreActionTest extends TestCase
 
         $passedStudent = User::factory()
             ->student()
-            ->graduated()
+            ->inProgress()
             ->create();
 
         Enrollment::factory()
@@ -186,7 +186,7 @@ class StoreActionTest extends TestCase
             'target_certification_id' => $targetCertification->id,
             'target_user_id' => null,
             'created_by_user_id' => $admin->id,
-            'dispatched_count' => 2,
+            'dispatched_count' => 1,
         ]);
 
         Notification::assertSentTo(
@@ -194,7 +194,7 @@ class StoreActionTest extends TestCase
             AdminAnnouncementNotification::class,
         );
 
-        Notification::assertSentTo(
+        Notification::assertNotSentTo(
             $passedStudent,
             AdminAnnouncementNotification::class,
         );
@@ -262,6 +262,43 @@ class StoreActionTest extends TestCase
 
         Notification::assertNotSentTo(
             $otherStudent,
+            AdminAnnouncementNotification::class,
+        );
+    }
+
+    public function test_does_not_dispatch_to_graduated_specified_student(): void
+    {
+        // Arrange
+        Notification::fake();
+
+        $admin = User::factory()->admin()->create();
+
+        $graduatedStudent = User::factory()
+            ->student()
+            ->graduated()
+            ->create();
+
+        $validated = [
+            'title' => '個別のお知らせ',
+            'body' => 'ご案内内容をご確認ください。',
+            'target_type' => AnnouncementTargetType::User->value,
+            'target_user_id' => $graduatedStudent->id,
+        ];
+
+        // Act
+        $announcement = app(StoreAction::class)(
+            $admin,
+            $validated,
+        );
+
+        // Assert
+        $this->assertSame(
+            0,
+            $announcement->fresh()->dispatched_count,
+        );
+
+        Notification::assertNotSentTo(
+            $graduatedStudent,
             AdminAnnouncementNotification::class,
         );
     }

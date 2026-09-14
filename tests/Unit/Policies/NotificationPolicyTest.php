@@ -109,6 +109,28 @@ class NotificationPolicyTest extends TestCase
         );
     }
 
+    public function test_view_denied_for_admin(): void
+    {
+        // Arrange
+        $admin = User::factory()->admin()->create();
+
+        $notification = DatabaseNotification::create([
+            'id' => (string) Str::uuid(),
+            'type' => 'test',
+            'notifiable_type' => User::class,
+            'notifiable_id' => $admin->id,
+            'data' => [],
+        ]);
+
+        // Act / Assert
+        $this->assertFalse(
+            app(NotificationPolicy::class)->view(
+                $admin,
+                $notification,
+            )
+        );
+    }
+
     public function test_mark_as_read_allowed_for_own_notification(): void
     {
         $student = User::factory()->student()->create();

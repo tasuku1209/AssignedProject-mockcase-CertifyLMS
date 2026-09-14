@@ -73,10 +73,10 @@ final class AnnouncementSeeder extends Seeder
 
         $students = User::query()
             ->where('role', UserRole::Student->value)
-            ->whereIn('status', [
+            ->where(
+                'status',
                 UserStatus::InProgress->value,
-                UserStatus::Graduated->value,
-            ])
+            )
             ->get();
 
         $this->dispatchNotifications($announcement, $students);
@@ -99,17 +99,17 @@ final class AnnouncementSeeder extends Seeder
 
         $students = User::query()
             ->where('role', UserRole::Student->value)
-            ->whereIn('status', [
+            ->where(
+                'status',
                 UserStatus::InProgress->value,
-                UserStatus::Graduated->value,
-            ])
+            )
             ->whereHas('enrollments', function ($query) use ($certification) {
                 $query
                     ->where('certification_id', $certification->id)
-                    ->whereIn('status', [
+                    ->where(
+                        'status',
                         EnrollmentStatus::Learning->value,
-                        EnrollmentStatus::Passed->value,
-                    ]);
+                    );
             })
             ->get();
 
@@ -134,10 +134,10 @@ final class AnnouncementSeeder extends Seeder
         $students = User::query()
             ->where('id', $student->id)
             ->where('role', UserRole::Student->value)
-            ->whereIn('status', [
+            ->where(
+                'status',
                 UserStatus::InProgress->value,
-                UserStatus::Graduated->value,
-            ])
+            )
             ->get();
 
         $this->dispatchNotifications($announcement, $students);

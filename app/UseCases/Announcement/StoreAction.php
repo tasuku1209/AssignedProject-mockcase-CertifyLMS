@@ -81,10 +81,10 @@ final class StoreAction
     {
         return User::query()
             ->where('role', UserRole::Student)
-            ->whereIn('status', [
+            ->where(
+                'status',
                 UserStatus::InProgress,
-                UserStatus::Graduated,
-            ])
+            )
             ->get();
     }
 
@@ -98,17 +98,17 @@ final class StoreAction
     ): Collection {
         return User::query()
             ->where('role', UserRole::Student)
-            ->whereIn('status', [
+            ->where(
+                'status',
                 UserStatus::InProgress,
-                UserStatus::Graduated,
-            ])
+            )
             ->whereHas('enrollments', function ($query) use ($certificationId) {
                 $query
                     ->where('certification_id', $certificationId)
-                    ->whereIn('status', [
+                    ->where(
+                        'status',
                         EnrollmentStatus::Learning,
-                        EnrollmentStatus::Passed,
-                    ]);
+                    );
             })
             ->get();
     }
@@ -124,10 +124,10 @@ final class StoreAction
         return User::query()
             ->where('id', $userId)
             ->where('role', UserRole::Student)
-            ->whereIn('status', [
+            ->where(
+                'status',
                 UserStatus::InProgress,
-                UserStatus::Graduated,
-            ])
+            )
             ->get();
     }
 }
