@@ -55,8 +55,8 @@ class SendMeetingReminders extends Command
             'one_hour_before' => Meeting::query()
                 ->where('status', MeetingStatus::Reserved)
                 ->whereBetween('scheduled_at', [
-                    now()->addHour()->startOfHour(),
-                    now()->addHour()->endOfHour(),
+                    now(),
+                    now()->addHour(),
                 ])
                 ->with(['student', 'coach'])
                 ->get(),
