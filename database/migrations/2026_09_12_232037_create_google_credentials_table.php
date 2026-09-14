@@ -15,7 +15,7 @@ return new class extends Migration
             $table->foreignUlid('user_id')
                 ->unique()
                 ->constrained('users')
-                ->restrictOnDelete();
+                ->cascadeOnDelete();
             $table->text('access_token');
             $table->text('refresh_token')->nullable();
             $table->timestamp('token_expires_at')->nullable();
