@@ -52,16 +52,13 @@ class SendMeetingRemindersCommandTest extends TestCase
         );
     }
 
-    public function test_one_hour_before_window_sends_reminders_to_student_and_coach_for_target_hour(): void
+    public function test_one_hour_before_window_sends_reminders_to_student_and_coach_for_meeting_within_one_hour(): void
     {
         // Arrange
         Notification::fake();
 
         $meeting = Meeting::factory()->create([
-            'scheduled_at' => now()
-                ->addHour()
-                ->startOfHour()
-                ->addMinutes(30),
+            'scheduled_at' => now()->addMinutes(30),
             'status' => MeetingStatus::Reserved,
         ]);
 
@@ -157,9 +154,14 @@ class SendMeetingRemindersCommandTest extends TestCase
             $student,
             MeetingReminderNotification::class,
         );
+
+        Notification::assertSentTo(
+            $meeting->coach,
+            MeetingReminderNotification::class,
+        );
     }
 
-    public function test_withdrawn_student_does_not_receive_reminder_but_coach_still_does(): void
+    public function test_withdrawn_student_causes_both_parties_to_not_receive_reminder(): void
     {
         // Arrange
         Notification::fake();
@@ -185,13 +187,13 @@ class SendMeetingRemindersCommandTest extends TestCase
             MeetingReminderNotification::class,
         );
 
-        Notification::assertSentTo(
+        Notification::assertNotSentTo(
             $meeting->coach,
             MeetingReminderNotification::class,
         );
     }
 
-    public function test_inactive_coach_does_not_receive_reminder_but_student_still_does(): void
+    public function test_withdrawn_coach_causes_both_parties_to_not_receive_reminder(): void
     {
         // Arrange
         Notification::fake();
@@ -217,7 +219,7 @@ class SendMeetingRemindersCommandTest extends TestCase
             MeetingReminderNotification::class,
         );
 
-        Notification::assertSentTo(
+        Notification::assertNotSentTo(
             $meeting->student,
             MeetingReminderNotification::class,
         );
@@ -264,10 +266,7 @@ class SendMeetingRemindersCommandTest extends TestCase
     {
         // Arrange
         $meeting = Meeting::factory()->create([
-            'scheduled_at' => now()
-                ->addHour()
-                ->startOfHour()
-                ->addMinutes(30),
+            'scheduled_at' => now()->addMinutes(30),
             'status' => MeetingStatus::Reserved,
         ]);
 

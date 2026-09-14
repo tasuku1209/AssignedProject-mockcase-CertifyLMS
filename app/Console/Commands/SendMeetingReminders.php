@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Enums\MeetingStatus;
-use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\Meeting;
 use App\Models\User;
@@ -65,22 +64,23 @@ class SendMeetingReminders extends Command
 
     private function sendReminder(Meeting $meeting, string $window): void
     {
-        $recipients = collect([
-            $meeting->student,
-            $meeting->coach,
-        ])->filter(
-            fn (User $user): bool => match ($user->role) {
-                UserRole::Student => in_array(
-                    $user->status,
-                    [UserStatus::InProgress, UserStatus::Graduated],
-                    true,
-                ),
-                UserRole::Coach => $user->status === UserStatus::InProgress,
-                default => false,
-            }
-        );
+        $student = $meeting->student;
+        $coach = $meeting->coach;
 
-        foreach ($recipients as $recipient) {
+        // 面談の両当事者が有効な状態でなければ、
+        // 面談自体を通知対象外とする。
+        if (
+            ! in_array(
+                $student->status,
+                [UserStatus::InProgress, UserStatus::Graduated],
+                true,
+            )
+            || $coach->status !== UserStatus::InProgress
+        ) {
+            return;
+        }
+
+        foreach ([$student, $coach] as $recipient) {
             if ($this->alreadySent($meeting, $recipient, $window)) {
                 continue;
             }
