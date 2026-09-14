@@ -17,6 +17,11 @@ use App\Models\User;
  */
 class AiChatConversationPolicy
 {
+    public function viewAny(User $auth): bool
+    {
+        return $auth->role === UserRole::Student;
+    }
+
     public function view(User $auth, AiChatConversation $conversation): bool
     {
         return $auth->role === UserRole::Student

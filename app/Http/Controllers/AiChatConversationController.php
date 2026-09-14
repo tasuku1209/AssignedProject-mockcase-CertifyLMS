@@ -22,13 +22,18 @@ use Illuminate\View\View;
  */
 class AiChatConversationController extends Controller
 {
-    public function index(IndexAction $action): View
+    public function index(IndexAction $action): RedirectResponse|View
     {
-        $conversations = $action(request()->user());
+        $this->authorize('viewAny', AiChatConversation::class);
 
-        return view('ai-chat.index', [
-            'conversations' => $conversations,
-        ]);
+        $conversation = $action(request()->user());
+
+        if ($conversation === null) {
+            return view('ai-chat.empty-state');
+        }
+
+        return redirect()
+            ->route('ai-chat.conversations.show', $conversation);
     }
 
     public function store(StoreRequest $request, StoreAction $action): RedirectResponse
