@@ -43,11 +43,7 @@ class NotificationPolicy
         User $user,
         DatabaseNotification $notification
     ): bool {
-        return in_array(
-            $user->role,
-            [UserRole::Student, UserRole::Coach],
-            true
-        )
+        return $user->role === UserRole::Student
             && $notification->notifiable_type === User::class
             && $notification->notifiable_id === $user->id;
     }

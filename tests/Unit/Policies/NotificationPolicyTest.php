@@ -87,23 +87,23 @@ class NotificationPolicyTest extends TestCase
         );
     }
 
-    public function test_view_denied_for_admin(): void
+    public function test_view_denied_for_coach(): void
     {
         // Arrange
-        $admin = User::factory()->admin()->create();
+        $coach = User::factory()->coach()->create();
 
         $notification = DatabaseNotification::create([
             'id' => (string) Str::uuid(),
             'type' => 'test',
             'notifiable_type' => User::class,
-            'notifiable_id' => $admin->id,
+            'notifiable_id' => $coach->id,
             'data' => [],
         ]);
 
         // Act / Assert
         $this->assertFalse(
             app(NotificationPolicy::class)->view(
-                $admin,
+                $coach,
                 $notification,
             )
         );

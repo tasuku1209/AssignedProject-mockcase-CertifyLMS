@@ -577,8 +577,15 @@ Route::middleware(['auth', 'role:student,coach', 'active-learning'])->group(func
         ->name('notifications.index');
     Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])
         ->name('notifications.markAllAsRead');
-    Route::get('notifications/{notification}', [NotificationController::class, 'show'])
-        ->name('notifications.show');
     Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
         ->name('notifications.markAsRead');
+});
+
+// ============================================================
+// 受講生専用 — notification detail
+// ============================================================
+
+Route::middleware(['auth', 'role:student', 'active-learning'])->group(function () {
+    Route::get('notifications/{notification}', [NotificationController::class, 'show'])
+        ->name('notifications.show');
 });
