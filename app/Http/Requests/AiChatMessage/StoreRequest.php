@@ -2,45 +2,49 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests\AiChatConversation;
+namespace App\Http\Requests\AiChatMessage;
 
 use App\Models\AiChatConversation;
+use App\Models\AiChatMessage;
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateRequest extends FormRequest
+/**
+ * AIチャットメッセージ送信リクエスト。
+ */
+class StoreRequest extends FormRequest
 {
-    /**
-     * AIチャット相談のタイトルを更新する権限を確認する。
-     */
     public function authorize(): bool
     {
         $conversation = $this->route('conversation');
 
         return $conversation instanceof AiChatConversation
-            && ($this->user()?->can('update', $conversation) ?? false);
+            && ($this->user()?->can('create', [
+                AiChatMessage::class,
+                $conversation,
+            ]) ?? false);
     }
 
     /**
-     * バリデーションルールを定義する。
+     * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
         return [
-            'title' => [
+            'content' => [
                 'required',
                 'string',
-                'max:100',
+                'max:2000',
             ],
         ];
     }
 
     /**
-     * バリデーションエラーメッセージの属性名を定義する。
+     * @return array<string, string>
      */
     public function attributes(): array
     {
         return [
-            'title' => 'タイトル',
+            'content' => 'メッセージ',
         ];
     }
 }
