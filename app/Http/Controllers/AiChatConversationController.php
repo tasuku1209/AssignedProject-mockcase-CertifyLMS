@@ -12,6 +12,7 @@ use App\UseCases\AiChatConversation\IndexAction;
 use App\UseCases\AiChatConversation\ShowAction;
 use App\UseCases\AiChatConversation\StoreAction;
 use App\UseCases\AiChatConversation\UpdateAction;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -36,12 +37,20 @@ class AiChatConversationController extends Controller
             ->route('ai-chat.conversations.show', $conversation);
     }
 
-    public function store(StoreRequest $request, StoreAction $action): RedirectResponse
-    {
+    public function store(
+        StoreRequest $request,
+        StoreAction $action,
+    ): JsonResponse|RedirectResponse {
         $conversation = $action(
             $request->user(),
             $request->validated(),
         );
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'conversation' => $conversation,
+            ], 201);
+        }
 
         return redirect()
             ->route('ai-chat.conversations.show', $conversation);
