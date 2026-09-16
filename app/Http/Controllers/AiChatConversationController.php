@@ -14,6 +14,7 @@ use App\UseCases\AiChatConversation\StoreAction;
 use App\UseCases\AiChatConversation\UpdateAction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -59,12 +60,24 @@ class AiChatConversationController extends Controller
             );
     }
 
-    public function show(AiChatConversation $conversation, ShowAction $action): View
-    {
+    public function show(
+        AiChatConversation $conversation,
+        ShowAction $action,
+        Request $request,
+    ): View|JsonResponse {
         $this->authorize('view', $conversation);
 
+        $conversation = $action($conversation);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'conversation' => $conversation,
+                'messages' => $conversation->messages,
+            ]);
+        }
+
         return view('ai-chat.show', [
-            'conversation' => $action($conversation),
+            'conversation' => $conversation,
         ]);
     }
 
