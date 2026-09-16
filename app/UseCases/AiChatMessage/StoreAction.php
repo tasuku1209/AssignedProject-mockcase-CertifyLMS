@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\GeminiService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Throwable;
 
 final class StoreAction
@@ -34,6 +35,23 @@ final class StoreAction
         User $user,
         array $validated,
     ): array {
+        $dailyLimit = config('ai-chat.daily_limit');
+
+        $todayAnswerCount = AiChatMessage::query()
+            ->whereHas('conversation', function ($query) use ($user): void {
+                $query->where('user_id', $user->id);
+            })
+            ->where('role', AiChatMessageRole::Assistant)
+            ->where('status', AiChatMessageStatus::Completed)
+            ->whereDate('created_at', today())
+            ->count();
+
+        if ($todayAnswerCount >= $dailyLimit) {
+            throw new TooManyRequestsHttpException(
+                message: '本日のAIチャット利用上限に達しました。',
+            );
+        }
+
         $conversation->loadMissing([
             'enrollment.certification',
             'section',
