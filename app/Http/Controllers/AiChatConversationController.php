@@ -41,19 +41,22 @@ class AiChatConversationController extends Controller
         StoreRequest $request,
         StoreAction $action,
     ): JsonResponse|RedirectResponse {
-        $conversation = $action(
+        $result = $action(
             $request->user(),
             $request->validated(),
         );
 
         if ($request->expectsJson()) {
             return response()->json([
-                'conversation' => $conversation,
-            ], 201);
+                'conversation' => $result['conversation'],
+            ], $result['created'] ? 201 : 200);
         }
 
         return redirect()
-            ->route('ai-chat.conversations.show', $conversation);
+            ->route(
+                'ai-chat.conversations.show',
+                $result['conversation'],
+            );
     }
 
     public function show(AiChatConversation $conversation, ShowAction $action): View

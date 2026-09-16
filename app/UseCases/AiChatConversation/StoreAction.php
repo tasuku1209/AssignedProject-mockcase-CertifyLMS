@@ -19,14 +19,17 @@ final class StoreAction
     ) {}
 
     /**
-     * AIチャット相談を新規作成する。
+     * AIチャット相談を取得または新規作成する。
      *
      * Sectionが指定された場合は、そのSectionが属するCertificationについて
      * ログイン中ユーザーのLearning状態のEnrollmentを取得する。
      *
-     * Sectionが指定されない場合は、ユーザーのdefaultEnrollmentを使用する。
+     * 同じユーザー・Enrollment・SectionのConversationが既に存在する場合は、
+     * 既存Conversationを再利用する。
      *
-     * 初回messageが指定された場合は、Conversation作成後に
+     * Sectionが指定されない場合は、常に新しいConversationを作成する。
+     *
+     * 初回messageが指定された場合は、Conversation取得・作成後に
      * Message StoreActionへ処理を委譲する。
      *
      * @param array{
@@ -34,11 +37,16 @@ final class StoreAction
      *     section_id?: ?string,
      *     message?: ?string
      * } $validated
+     *
+     * @return array{
+     *     conversation: AiChatConversation,
+     *     created: bool
+     * }
      */
     public function __invoke(
         User $user,
         array $validated,
-    ): AiChatConversation {
+    ): array {
         $enrollment = null;
         $sectionId = $validated['section_id'] ?? null;
 
@@ -89,16 +97,44 @@ final class StoreAction
             }
         }
 
-        $conversation = DB::transaction(
-            fn () => AiChatConversation::create([
-                'user_id' => $user->id,
-                'enrollment_id' => $enrollment->id,
-                'section_id' => $sectionId,
-                'title' => null,
-                'auto_title_enabled' => true,
-                'last_message_at' => null,
-            ]),
+        $result = DB::transaction(
+            function () use (
+                $user,
+                $enrollment,
+                $sectionId,
+            ): array {
+                if ($sectionId !== null) {
+                    $existingConversation = AiChatConversation::query()
+                        ->where('user_id', $user->id)
+                        ->where('enrollment_id', $enrollment->id)
+                        ->where('section_id', $sectionId)
+                        ->first();
+
+                    if ($existingConversation !== null) {
+                        return [
+                            'conversation' => $existingConversation,
+                            'created' => false,
+                        ];
+                    }
+                }
+
+                $conversation = AiChatConversation::create([
+                    'user_id' => $user->id,
+                    'enrollment_id' => $enrollment->id,
+                    'section_id' => $sectionId,
+                    'title' => null,
+                    'auto_title_enabled' => true,
+                    'last_message_at' => null,
+                ]);
+
+                return [
+                    'conversation' => $conversation,
+                    'created' => true,
+                ];
+            },
         );
+
+        $conversation = $result['conversation'];
 
         $message = $validated['message'] ?? null;
 
@@ -110,6 +146,9 @@ final class StoreAction
             );
         }
 
-        return $conversation->fresh();
+        return [
+            'conversation' => $conversation->fresh(),
+            'created' => $result['created'],
+        ];
     }
 }
