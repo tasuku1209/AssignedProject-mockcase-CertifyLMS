@@ -15,7 +15,10 @@ use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Throwable;
 
-final class StoreAction
+/**
+ * `final` 不採用: Mockery で mock するテストを想定するため。
+ */
+class StoreAction
 {
     public function __construct(
         private readonly GeminiService $geminiService,
