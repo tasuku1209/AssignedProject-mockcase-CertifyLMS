@@ -14,6 +14,7 @@ class GeminiService
      *
      * @return array{
      *     text: string,
+     *     title: string,
      *     model: string,
      *     input_tokens: int|null,
      *     output_tokens: int|null
@@ -55,8 +56,11 @@ class GeminiService
 
         $data = $response->json();
 
+        $text = $this->extractText($data);
+
         return [
-            'text' => $this->extractText($data),
+            'text' => $this->extractAnswer($text),
+            'title' => $this->extractTitle($text),
             'model' => $model,
             'input_tokens' => $data['usageMetadata']['promptTokenCount'] ?? null,
             'output_tokens' => $data['usageMetadata']['candidatesTokenCount'] ?? null,
@@ -64,6 +68,8 @@ class GeminiService
     }
 
     /**
+     * Geminiのレスポンスからテキストを取得する。
+     *
      * @param array<string, mixed> $data
      */
     private function extractText(array $data): string
@@ -80,5 +86,49 @@ class GeminiService
         }
 
         throw new RuntimeException('Geminiからテキスト回答を取得できませんでした。');
+    }
+
+    /**
+     * Geminiのレスポンスからタイトルを取得する。
+     */
+    private function extractTitle(string $text): string
+    {
+        if (! preg_match(
+            '/TITLE:\s*(.+?)(?=\R\s*ANSWER:)/s',
+            $text,
+            $matches,
+        )) {
+            throw new RuntimeException('Geminiからタイトルを取得できませんでした。');
+        }
+
+        $title = trim($matches[1]);
+
+        if ($title === '') {
+            throw new RuntimeException('Geminiからタイトルを取得できませんでした。');
+        }
+
+        return $title;
+    }
+
+    /**
+     * Geminiのレスポンスから回答を取得する。
+     */
+    private function extractAnswer(string $text): string
+    {
+        if (! preg_match(
+            '/ANSWER:\s*(.+)$/s',
+            $text,
+            $matches,
+        )) {
+            throw new RuntimeException('Geminiから回答を取得できませんでした。');
+        }
+
+        $answer = trim($matches[1]);
+
+        if ($answer === '') {
+            throw new RuntimeException('Geminiから回答を取得できませんでした。');
+        }
+
+        return $answer;
     }
 }

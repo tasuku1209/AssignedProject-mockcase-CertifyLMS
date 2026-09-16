@@ -11,6 +11,7 @@ use App\Models\AiChatMessage;
 use App\Models\User;
 use App\Services\GeminiService;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 use Throwable;
 
 final class StoreAction
@@ -80,6 +81,16 @@ final class StoreAction
                 'response_time_ms' => $responseTimeMs,
             ]);
 
+            if ($conversation->auto_title_enabled) {
+                $conversation->update([
+                    'title' => Str::limit(
+                        $result['title'],
+                        100,
+                        '',
+                    ),
+                ]);
+            }
+
             $conversation->update([
                 'last_message_at' => now(),
             ]);
@@ -132,6 +143,11 @@ PROMPT;
             );
         }
 
+        $prompt .= "\n【現在のタイトル】\n";
+        $prompt .= $conversation->title !== null
+            ? "{$conversation->title}\n"
+            : 'まだタイトルはありません。今回の質問から適切なタイトルを付けてください。';
+
         $prompt .= <<<'PROMPT'
 
 【会話履歴】
@@ -150,7 +166,26 @@ PROMPT;
 【今回の質問】
 受講生: {$currentContent}
 
-【回答】
+【タイトルについて】
+現在のタイトルが会話全体の内容を適切に表している場合は、
+現在のタイトルをそのまま使用してください。
+
+今回の質問によって会話の主題が大きく変化し、
+現在のタイトルでは会話内容を適切に表せなくなった場合のみ、
+新しいタイトルを付けてください。
+
+タイトルは学習ノートとして後から見返しやすい、
+簡潔で具体的なものにしてください。
+タイトルは100文字以内にしてください。
+
+【出力形式】
+必ず以下の形式だけで出力してください。
+
+TITLE:
+タイトル
+
+ANSWER:
+受講生への回答
 PROMPT;
 
         return $prompt;

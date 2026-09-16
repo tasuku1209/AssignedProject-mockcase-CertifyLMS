@@ -10,7 +10,10 @@ use Illuminate\Support\Facades\DB;
 final class UpdateAction
 {
     /**
-     * AIチャット相談のタイトルを更新する。
+     * AIチャット相談のタイトルを手動更新する。
+     *
+     * 手動でタイトルを編集した場合は、
+     * 以後AIによる自動タイトル更新を無効にする。
      *
      * @param array{title: string} $validated
      */
@@ -21,6 +24,7 @@ final class UpdateAction
         return DB::transaction(function () use ($conversation, $validated) {
             $conversation->update([
                 'title' => $validated['title'],
+                'auto_title_enabled' => false,
             ]);
 
             return $conversation->fresh();
