@@ -90,6 +90,14 @@ final class StoreAction
                 )
                 ->first();
 
+            $enrollment ??= $user->enrollments()
+                ->where(
+                    'status',
+                    EnrollmentStatus::Learning->value,
+                )
+                ->orderBy('id')
+                ->first();
+
             if ($enrollment === null) {
                 throw ValidationException::withMessages([
                     'section_id' => '現在受講中の資格を取得できません。',
