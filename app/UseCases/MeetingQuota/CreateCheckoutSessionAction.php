@@ -10,7 +10,6 @@ use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
-use Stripe\Checkout\Session;
 use Stripe\StripeClient;
 
 /**
@@ -24,8 +23,10 @@ final class CreateCheckoutSessionAction
 
     /**
      * Stripe Checkout Session を作成し、購入待ちの Payment を登録する。
+     *
+     * @param array{meeting_pack_id: string} $validated
      */
-    public function __invoke(User $user, array $validated): Payment
+    public function __invoke(User $user, array $validated): string
     {
         $meetingPack = MeetingPack::query()
             ->published()
@@ -33,14 +34,16 @@ final class CreateCheckoutSessionAction
             ->firstOrFail();
 
         if ($meetingPack->stripe_price_id === null) {
-            throw new RuntimeException('購入可能な面談パックにStripe Price IDが設定されていません。');
+            throw new RuntimeException(
+                '購入可能な面談パックにStripe Price IDが設定されていません。'
+            );
         }
 
         $payment = DB::transaction(function () use ($user, $meetingPack): Payment {
             return Payment::create([
                 'user_id' => $user->id,
                 'meeting_pack_id' => $meetingPack->id,
-                'stripe_checkout_session_id' => 'pending-'.uniqid(),
+                'stripe_checkout_session_id' => null,
                 'quantity' => $meetingPack->meeting_count,
                 'amount' => $meetingPack->price,
                 'status' => PaymentStatus::Pending,
@@ -75,6 +78,6 @@ final class CreateCheckoutSessionAction
             'stripe_checkout_session_id' => $session->id,
         ]);
 
-        return $payment;
+        return $session->url;
     }
 }

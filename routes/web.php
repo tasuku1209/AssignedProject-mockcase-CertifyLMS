@@ -49,9 +49,11 @@ use App\Http\Controllers\Settings\AvatarController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
 use App\Http\Controllers\WeakDrillResultController;
+use App\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -69,6 +71,17 @@ Route::get('/onboarding/{invitation}', [OnboardingController::class, 'show'])
 Route::post('/onboarding/{invitation}', [OnboardingController::class, 'store'])
     ->middleware('signed')
     ->name('onboarding.store');
+
+// ============================================================
+// Stripe Webhook（決済確定）
+// ============================================================
+
+// Stripe からの Webhook を受信する公開エンドポイント。
+// Stripe の署名検証を Controller / Action 側で行うため、auth・role middleware は適用しない。
+// Stripe からのリクエストには CSRF トークンが含まれないため、CSRF 検証を除外する。
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])
+    ->withoutMiddleware([VerifyCsrfToken::class])
+    ->name('webhooks.stripe');
 
 // ============================================================
 // 認証後の全ロール共通ルート

@@ -6,8 +6,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\MeetingQuota\CreateCheckoutSessionRequest;
 use App\Models\MeetingPack;
+use App\Models\Payment;
 use App\UseCases\MeetingQuota\CreateCheckoutSessionAction;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -37,23 +39,31 @@ class MeetingQuotaController extends Controller
      */
     public function store(
         CreateCheckoutSessionRequest $request,
-        CreateCheckoutSessionAction $action
+        CreateCheckoutSessionAction $action,
     ): RedirectResponse {
-        $payment = $action(
+        $checkoutUrl = $action(
             $request->user(),
             $request->validated(),
         );
 
-        return redirect($payment->checkout_url);
+        return redirect()->away($checkoutUrl);
     }
 
     /**
      * Stripe Checkout 完了後の購入完了画面を表示する。
      */
-    public function success(): View
+    public function success(Request $request): View
     {
         $this->authorize('view-meeting-quota-success');
 
-        return view('meeting-quota.success');
+        $payment = Payment::query()
+            ->with('meetingPack')
+            ->where('stripe_checkout_session_id', $request->query('session_id'))
+            ->where('user_id', $request->user()->id)
+            ->first();
+
+        return view('meeting-quota.success', [
+            'payment' => $payment,
+        ]);
     }
 }

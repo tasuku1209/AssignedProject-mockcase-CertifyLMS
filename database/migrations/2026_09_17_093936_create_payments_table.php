@@ -20,6 +20,7 @@ return new class extends Migration
                 ->constrained('meeting_packs')
                 ->nullOnDelete();
             $table->string('stripe_checkout_session_id', 255)
+                ->nullable()
                 ->unique();
             $table->unsignedSmallInteger('quantity');
             $table->unsignedInteger('amount');
