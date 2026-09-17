@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\MeetingQuota;
 
 use App\Enums\MeetingPackStatus;
-use App\Models\MeetingPack;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -29,7 +28,7 @@ class CreateCheckoutSessionRequest extends FormRequest
             'meeting_pack_id' => [
                 'required',
                 'ulid',
-                Rule::exists(MeetingPack::class, 'id')
+                Rule::exists('meeting_packs', 'id')
                     ->where('status', MeetingPackStatus::Published->value),
             ],
         ];
