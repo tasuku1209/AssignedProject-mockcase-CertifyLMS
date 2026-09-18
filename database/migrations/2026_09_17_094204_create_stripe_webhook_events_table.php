@@ -10,28 +10,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('payments', function (Blueprint $table) {
+        Schema::create('stripe_webhook_events', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('user_id')
-                ->constrained('users')
-                ->restrictOnDelete();
-            $table->foreignUlid('meeting_pack_id')
-                ->nullable()
-                ->constrained('meeting_packs')
-                ->nullOnDelete();
-            $table->string('stripe_checkout_session_id', 255)
-                ->unique();
-            $table->unsignedSmallInteger('quantity');
-            $table->unsignedInteger('amount');
-            $table->string('status', 20);
-            $table->timestamp('paid_at')->nullable();
+            $table->string('stripe_event_id', 255)->unique();
+            $table->string('event_type', 100);
+            $table->timestamp('processed_at')->nullable();
             $table->timestamps();
-            $table->index(['user_id', 'status']);
+            $table->index('event_type');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('payments');
+        Schema::dropIfExists('stripe_webhook_events');
     }
 };

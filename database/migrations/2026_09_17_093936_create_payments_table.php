@@ -25,6 +25,7 @@ return new class extends Migration
             $table->unsignedSmallInteger('quantity');
             $table->unsignedInteger('amount');
             $table->string('status', 20);
+            $table->timestamp('paid_at')->nullable();
             $table->timestamps();
             $table->index(['user_id', 'status']);
         });
