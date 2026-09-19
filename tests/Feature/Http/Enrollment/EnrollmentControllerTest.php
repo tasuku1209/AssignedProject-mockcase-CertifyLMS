@@ -14,6 +14,7 @@ use App\Models\MockExam;
 use App\Models\MockExamSession;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -533,6 +534,45 @@ class EnrollmentControllerTest extends TestCase
 
         $this->assertSame(409, $response->status());
         $this->assertSame(EnrollmentStatus::Learning, $enrollment->fresh()->status);
+    }
+
+    public function test_receive_certificate_generates_and_stores_pdf(): void
+    {
+        Storage::fake('private');
+
+        $student = User::factory()->student()->inProgress()->create();
+        $certification = Certification::factory()->published()->create();
+        $enrollment = Enrollment::factory()
+            ->for($student)
+            ->for($certification)
+            ->learning()
+            ->create();
+
+        $exam = MockExam::factory()
+            ->for($certification)
+            ->create([
+                'is_published' => true,
+            ]);
+
+        MockExamSession::factory()
+            ->for($enrollment)
+            ->for($exam)
+            ->create([
+                'pass' => true,
+            ]);
+
+        $response = $this->actingAs($student)
+            ->post(route('enrollments.receiveCertificate', $enrollment));
+
+        $response->assertRedirect(route('enrollments.show', $enrollment));
+
+        $certificate = $enrollment
+            ->certificate()
+            ->first();
+
+        $this->assertNotNull($certificate);
+
+        Storage::disk('private')->assertExists($certificate->pdf_path);
     }
 
     public function test_receive_certificate_returns_403_for_non_owner(): void

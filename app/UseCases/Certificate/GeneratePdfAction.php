@@ -11,7 +11,10 @@ use Mpdf\Config\FontVariables;
 use Mpdf\Mpdf;
 use RuntimeException;
 
-final class GeneratePdfAction
+/**
+ * PDF生成失敗時のテストでMockeryによるモック化が必要なため、finalは付けない。
+ */
+class GeneratePdfAction
 {
     public function __invoke(Certificate $certificate): void
     {
