@@ -308,7 +308,7 @@ class NotificationTest extends TestCase
         ]);
     }
 
-    public function test_cancel_does_not_send_notification_to_graduated_student(): void
+    public function test_cancel_sends_notification_to_graduated_student_when_coach_cancels(): void
     {
         // Arrange
         Notification::fake();
@@ -316,6 +316,69 @@ class NotificationTest extends TestCase
         $student = User::factory()
             ->student()
             ->graduated()
+            ->create();
+
+        $admin = User::factory()->admin()->create();
+
+        $coach = User::factory()
+            ->coach()
+            ->inProgress()
+            ->create();
+
+        $certification = Certification::factory()
+            ->published()
+            ->create();
+
+        $this->attachCoach($certification, $coach, $admin);
+
+        $enrollment = Enrollment::factory()
+            ->for($student, 'user')
+            ->for($certification)
+            ->learning()
+            ->create();
+
+        $meeting = Meeting::factory()
+            ->reserved()
+            ->forEnrollment($enrollment)
+            ->forStudent($student)
+            ->forCoach($coach)
+            ->create([
+                'scheduled_at' => now()->addDay(),
+            ]);
+
+        // Act
+        $response = $this->actingAs($coach)
+            ->post(route('meetings.cancel', $meeting));
+
+        // Assert
+        $response->assertRedirect();
+
+        $meeting->refresh();
+
+        $this->assertSame(
+            MeetingStatus::Canceled,
+            $meeting->status,
+        );
+
+        $this->assertSame(
+            $coach->id,
+            $meeting->canceled_by_user_id,
+        );
+
+        Notification::assertSentTo(
+            $student,
+            MeetingCanceledNotification::class,
+        );
+    }
+
+    public function test_cancel_does_not_send_notification_to_withdrawn_student(): void
+    {
+        // Arrange
+        Notification::fake();
+
+        $student = User::factory()
+            ->student()
+            ->withdrawn()
             ->create();
 
         $admin = User::factory()->admin()->create();
