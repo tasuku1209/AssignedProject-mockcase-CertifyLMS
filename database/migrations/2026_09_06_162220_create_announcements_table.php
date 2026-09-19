@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('title', 200);
             $table->text('body');
 
-            $table->string('target_type', 32);
+            $table->string('target_type', 20);
 
             $table->foreignUlid('target_certification_id')
                 ->nullable()
