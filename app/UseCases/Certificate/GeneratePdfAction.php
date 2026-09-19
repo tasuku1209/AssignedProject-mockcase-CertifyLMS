@@ -6,6 +6,8 @@ namespace App\UseCases\Certificate;
 
 use App\Models\Certificate;
 use Illuminate\Support\Facades\Storage;
+use Mpdf\Config\ConfigVariables;
+use Mpdf\Config\FontVariables;
 use Mpdf\Mpdf;
 use RuntimeException;
 
@@ -17,9 +19,24 @@ final class GeneratePdfAction
             'certificate' => $certificate,
         ])->render();
 
+        $defaultConfig = (new ConfigVariables)->getDefaults();
+        $fontDirs = $defaultConfig['fontDir'];
+
+        $defaultFontConfig = (new FontVariables)->getDefaults();
+        $fontData = $defaultFontConfig['fontdata'];
+
+        $fontDirs[] = resource_path('fonts');
+
+        $fontData['ipaexg'] = [
+            'R' => 'ipaexg.ttf',
+        ];
+
         $mpdf = new Mpdf([
             'format' => 'A4',
             'orientation' => 'L',
+            'fontDir' => $fontDirs,
+            'fontdata' => $fontData,
+            'default_font' => 'ipaexg',
         ]);
 
         $mpdf->WriteHTML($html);
