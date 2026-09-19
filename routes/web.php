@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\BrowseController;
 use App\Http\Controllers\CertificationCatalogController;
@@ -267,6 +268,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
     Route::post('meeting-packs/{plan}/unarchive', [MeetingPackController::class, 'unarchive'])
         ->name('admin.meeting-packs.unarchive');
+
+    // お知らせ管理
+    Route::get('announcements', [AnnouncementController::class, 'index'])
+        ->name('admin.announcements.index');
+    Route::get('announcements/create', [AnnouncementController::class, 'create'])
+        ->name('admin.announcements.create');
+    Route::post('announcements', [AnnouncementController::class, 'store'])
+        ->name('admin.announcements.store');
+    Route::get('announcements/{announcement}', [AnnouncementController::class, 'show'])
+        ->name('admin.announcements.show');
 });
 
 // ============================================================
@@ -647,15 +658,19 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 // ============================================================
 // 受講生・コーチ共有 — notifications
 // ============================================================
-
 Route::middleware(['auth', 'role:student,coach'])->group(function () {
-
     Route::get('notifications', [NotificationController::class, 'index'])
         ->name('notifications.index');
-
     Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])
         ->name('notifications.markAllAsRead');
-
     Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
         ->name('notifications.markAsRead');
+});
+
+// ============================================================
+// 受講生専用 — notification detail
+// ============================================================
+Route::middleware(['auth', 'role:student', 'active-learning'])->group(function () {
+    Route::get('notifications/{notification}', [NotificationController::class, 'show'])
+        ->name('notifications.show');
 });

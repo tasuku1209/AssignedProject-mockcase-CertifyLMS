@@ -26,6 +26,19 @@ class NotificationController extends Controller
         return view('notifications.index', $result);
     }
 
+    /**
+     * 通知詳細を表示する。
+     */
+    public function show(
+        DatabaseNotification $notification,
+    ): View {
+        $this->authorize('view', $notification);
+
+        return view('notifications.show', [
+            'notification' => $notification,
+        ]);
+    }
+
     public function markAsRead(
         DatabaseNotification $notification,
         MarkAsReadAction $action,
@@ -40,7 +53,7 @@ class NotificationController extends Controller
             return redirect()->to($url);
         }
 
-        return redirect()->back();
+        return redirect()->route('notifications.show', $notification);
     }
 
     public function markAllAsRead(

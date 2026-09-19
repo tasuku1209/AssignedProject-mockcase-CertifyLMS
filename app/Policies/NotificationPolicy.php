@@ -34,6 +34,21 @@ class NotificationPolicy
     }
 
     /**
+     * 通知詳細を閲覧できるか。
+     *
+     * URL の {notification} で指定された通知が、
+     * ログインユーザー本人宛の通知であることを確認する。
+     */
+    public function view(
+        User $user,
+        DatabaseNotification $notification
+    ): bool {
+        return $user->role === UserRole::Student
+            && $notification->notifiable_type === User::class
+            && $notification->notifiable_id === $user->id;
+    }
+
+    /**
      * 通知を既読化できるか。
      *
      * URL の {notification} で指定された通知が、
