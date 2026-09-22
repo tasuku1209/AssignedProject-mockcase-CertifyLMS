@@ -262,5 +262,42 @@ checkout.session.completed
 * 購入履歴に決済内容が表示される
 
 以上で、Stripe Checkoutでの決済からWebhookの受信、アプリケーション側での決済確定・面談回数追加までを確認できます。
+### Google Calendar
+
+コーチの面談予約と Google Calendar を連携する場合は、Google Cloud で OAuth 2.0 クライアントを作成し、以下の環境変数を設定してください。
+
+```env
+GOOGLE_CLIENT_ID=取得したクライアントID
+GOOGLE_CLIENT_SECRET=取得したクライアントシークレット
+```
+
+Google Cloud の設定内容は以下のとおりです。
+
+1. Google Cloud プロジェクトを作成します。
+2. **Google Calendar API** を有効にします。
+3. OAuth 同意画面（Google Auth Platform）を設定します。
+4. アプリの対象を `External` に設定します。
+5. 開発・テスト用の場合は、OAuth のテストユーザーに利用する Google アカウントを追加します。
+6. OAuth クライアント ID を **Web application** として作成します。
+7. 承認済みのリダイレクト URI に以下を登録します。
+
+```text
+http://localhost:8000/settings/google-calendar/callback
+```
+
+8. 作成した OAuth クライアントのクライアント ID とクライアントシークレットを `.env` に設定します。
+
+Google Calendar 連携には以下の OAuth スコープを使用します。
+
+```text
+https://www.googleapis.com/auth/calendar.events.owned
+https://www.googleapis.com/auth/calendar.events.freebusy
+https://www.googleapis.com/auth/calendar.calendars.readonly
+```
+
+設定後、コーチでログインし、設定画面から Google Calendar を連携してください。
+
+Google Calendar 連携は任意です。未設定・未連携のコーチは、従来どおり Google Calendar を使用せずに面談予約を利用できます。
+
 
 新しい環境変数やセットアップ手順を追加した場合は、`.env.example` と本 README に追記し、チームの誰でも環境を再現できる状態を保ってください。

@@ -42,6 +42,95 @@ class NotificationPolicyTest extends TestCase
         );
     }
 
+    public function test_view_allowed_for_own_notification(): void
+    {
+        // Arrange
+        $student = User::factory()->student()->create();
+
+        $notification = DatabaseNotification::create([
+            'id' => (string) Str::uuid(),
+            'type' => 'test',
+            'notifiable_type' => User::class,
+            'notifiable_id' => $student->id,
+            'data' => [],
+        ]);
+
+        // Act / Assert
+        $this->assertTrue(
+            app(NotificationPolicy::class)->view(
+                $student,
+                $notification,
+            )
+        );
+    }
+
+    public function test_view_denied_for_other_users_notification(): void
+    {
+        // Arrange
+        $student = User::factory()->student()->create();
+        $otherStudent = User::factory()->student()->create();
+
+        $notification = DatabaseNotification::create([
+            'id' => (string) Str::uuid(),
+            'type' => 'test',
+            'notifiable_type' => User::class,
+            'notifiable_id' => $otherStudent->id,
+            'data' => [],
+        ]);
+
+        // Act / Assert
+        $this->assertFalse(
+            app(NotificationPolicy::class)->view(
+                $student,
+                $notification,
+            )
+        );
+    }
+
+    public function test_view_denied_for_coach(): void
+    {
+        // Arrange
+        $coach = User::factory()->coach()->create();
+
+        $notification = DatabaseNotification::create([
+            'id' => (string) Str::uuid(),
+            'type' => 'test',
+            'notifiable_type' => User::class,
+            'notifiable_id' => $coach->id,
+            'data' => [],
+        ]);
+
+        // Act / Assert
+        $this->assertFalse(
+            app(NotificationPolicy::class)->view(
+                $coach,
+                $notification,
+            )
+        );
+    }
+
+    public function test_view_denied_for_admin(): void
+    {
+        // Arrange
+        $admin = User::factory()->admin()->create();
+
+        $notification = DatabaseNotification::create([
+            'id' => (string) Str::uuid(),
+            'type' => 'test',
+            'notifiable_type' => User::class,
+            'notifiable_id' => $admin->id,
+            'data' => [],
+        ]);
+
+        // Act / Assert
+        $this->assertFalse(
+            app(NotificationPolicy::class)->view(
+                $admin,
+                $notification,
+            )
+        );
+    }
+
     public function test_mark_as_read_allowed_for_own_notification(): void
     {
         $student = User::factory()->student()->create();
