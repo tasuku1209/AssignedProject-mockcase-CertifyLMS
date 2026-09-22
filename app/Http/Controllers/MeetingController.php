@@ -247,7 +247,7 @@ class MeetingController extends Controller
 
         $actor = auth()->user();
 
-        DB::transaction(function () use ($meeting, $actor) {
+        DB::transaction(function () use ($meeting, $actor, $refundAction) {
             $locked = Meeting::query()->whereKey($meeting->id)->lockForUpdate()->first();
             if ($locked === null || $locked->status !== MeetingStatus::Reserved) {
                 throw MeetingStatusTransitionException::forCancel();
@@ -263,19 +263,27 @@ class MeetingController extends Controller
                 'canceled_at' => now(),
             ]);
 
+            $refundAction($locked->student, $locked->id);
+
             DB::afterCommit(function () use ($locked, $actor): void {
                 $recipient = $locked->student_id === $actor->id
                     ? $locked->coach
                     : $locked->student;
 
-                if (
-                    in_array(
-                        $recipient->role,
-                        [UserRole::Student, UserRole::Coach],
-                        true
-                    )
-                    && $recipient->status === UserStatus::InProgress
-                ) {
+                $shouldNotify = match ($recipient->role) {
+                    UserRole::Student => in_array(
+                        $recipient->status,
+                        [
+                            UserStatus::InProgress,
+                            UserStatus::Graduated,
+                        ],
+                        true,
+                    ),
+                    UserRole::Coach => $recipient->status === UserStatus::InProgress,
+                    default => false,
+                };
+
+                if ($shouldNotify) {
                     $recipient->notify(
                         new MeetingCanceledNotification($locked)
                     );
