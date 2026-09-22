@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Models\Certificate;
+use App\Models\AiChatConversation;
+use App\Models\AiChatMessage;
+use App\Models\Announcement;
 use App\Models\Certification;
 use App\Models\CertificationCategory;
 use App\Models\Chapter;
@@ -12,6 +15,7 @@ use App\Models\ChatRoom;
 use App\Models\CoachAvailability;
 use App\Models\Enrollment;
 use App\Models\EnrollmentNote;
+use App\Models\GoogleCredential;
 use App\Models\Invitation;
 use App\Models\LearningHourTarget;
 use App\Models\LearningSession;
@@ -33,6 +37,9 @@ use App\Models\SectionQuestionAnswer;
 use App\Models\SectionQuestionAttempt;
 use App\Models\User;
 use App\Policies\CertificatePolicy;
+use App\Policies\AiChatConversationPolicy;
+use App\Policies\AiChatMessagePolicy;
+use App\Policies\AnnouncementPolicy;
 use App\Policies\CertificationCategoryPolicy;
 use App\Policies\CertificationPolicy;
 use App\Policies\ChapterPolicy;
@@ -41,6 +48,7 @@ use App\Policies\ChatRoomPolicy;
 use App\Policies\CoachAvailabilityPolicy;
 use App\Policies\EnrollmentNotePolicy;
 use App\Policies\EnrollmentPolicy;
+use App\Policies\GoogleCredentialPolicy;
 use App\Policies\InvitationPolicy;
 use App\Policies\LearningHourTargetPolicy;
 use App\Policies\LearningSessionPolicy;
@@ -88,6 +96,8 @@ class AuthServiceProvider extends ServiceProvider
         Part::class => PartPolicy::class,
         Chapter::class => ChapterPolicy::class,
         ChatRoom::class => ChatRoomPolicy::class,
+        AiChatConversation::class => AiChatConversationPolicy::class,
+        AiChatMessage::class => AiChatMessagePolicy::class,
         Section::class => SectionPolicy::class,
         SectionImage::class => SectionImagePolicy::class,
         SectionQuestion::class => SectionQuestionPolicy::class,
@@ -109,6 +119,8 @@ class AuthServiceProvider extends ServiceProvider
         Plan::class => PlanPolicy::class,
         MeetingPack::class => MeetingPackPolicy::class,
         DatabaseNotification::class => NotificationPolicy::class,
+        GoogleCredential::class => GoogleCredentialPolicy::class,
+        Announcement::class => AnnouncementPolicy::class,
     ];
 
     /**
@@ -118,6 +130,11 @@ class AuthServiceProvider extends ServiceProvider
     {
         // 面談回数履歴の閲覧は Model に直接紐づかない受講生 Ability として Gate 登録する
         Gate::define('view-meeting-quota-history', [MeetingQuotaPolicy::class, 'viewHistory']);
+
+        // 追加面談購入は Model に直接紐づかない受講生 Ability として Gate 登録する
+        Gate::define('view-meeting-quota-checkout', [MeetingQuotaPolicy::class, 'viewCheckout']);
+        Gate::define('create-meeting-quota-checkout', [MeetingQuotaPolicy::class, 'createCheckout']);
+        Gate::define('view-meeting-quota-success', [MeetingQuotaPolicy::class, 'viewSuccess']);
 
         // 受講生視点の教材閲覧認可: 既存の admin / coach 用 PartPolicy / ChapterPolicy / SectionPolicy が
         // Model::class に auto-bind されているため、別 Gate 名で受講生用 View Policy を登録して両立させる。
