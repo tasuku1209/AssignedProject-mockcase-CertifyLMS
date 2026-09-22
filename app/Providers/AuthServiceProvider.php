@@ -122,6 +122,11 @@ class AuthServiceProvider extends ServiceProvider
         // 面談回数履歴の閲覧は Model に直接紐づかない受講生 Ability として Gate 登録する
         Gate::define('view-meeting-quota-history', [MeetingQuotaPolicy::class, 'viewHistory']);
 
+        // 追加面談購入は Model に直接紐づかない受講生 Ability として Gate 登録する
+        Gate::define('view-meeting-quota-checkout', [MeetingQuotaPolicy::class, 'viewCheckout']);
+        Gate::define('create-meeting-quota-checkout', [MeetingQuotaPolicy::class, 'createCheckout']);
+        Gate::define('view-meeting-quota-success', [MeetingQuotaPolicy::class, 'viewSuccess']);
+
         // 受講生視点の教材閲覧認可: 既存の admin / coach 用 PartPolicy / ChapterPolicy / SectionPolicy が
         // Model::class に auto-bind されているため、別 Gate 名で受講生用 View Policy を登録して両立させる。
         Gate::define('learning.part.view', [PartViewPolicy::class, 'view']);

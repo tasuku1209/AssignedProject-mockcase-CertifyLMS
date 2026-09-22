@@ -22,6 +22,7 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\LearningHourTargetController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\MeetingPackController;
+use App\Http\Controllers\MeetingQuotaController;
 use App\Http\Controllers\MeetingQuotaHistoryController;
 use App\Http\Controllers\MockExamAnswerController;
 use App\Http\Controllers\MockExamCatalogController;
@@ -50,9 +51,11 @@ use App\Http\Controllers\Settings\AvatarController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
 use App\Http\Controllers\WeakDrillResultController;
+use App\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -70,6 +73,17 @@ Route::get('/onboarding/{invitation}', [OnboardingController::class, 'show'])
 Route::post('/onboarding/{invitation}', [OnboardingController::class, 'store'])
     ->middleware('signed')
     ->name('onboarding.store');
+
+// ============================================================
+// Stripe Webhook（決済確定）
+// ============================================================
+
+// Stripe からの Webhook を受信する公開エンドポイント。
+// Stripe の署名検証を Controller / Action 側で行うため、auth・role middleware は適用しない。
+// Stripe からのリクエストには CSRF トークンが含まれないため、CSRF 検証を除外する。
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])
+    ->withoutMiddleware([VerifyCsrfToken::class])
+    ->name('webhooks.stripe');
 
 // ============================================================
 // 認証後の全ロール共通ルート
@@ -577,9 +591,18 @@ Route::middleware(['auth', 'role:coach', 'active-learning'])
     });
 
 // ============================================================
-// 受講生専用ルート(受講中=in_progress のみ通過)
+// 受講生専用ルート(受講中=in_progress のみ通過) / 面談回数購入フロー
 // ============================================================
 Route::middleware(['auth', 'role:student', 'active-learning'])->prefix('meeting-quota')->name('meeting-quota.')->group(function () {
+    // 追加面談購入画面
+    Route::get('checkout', [MeetingQuotaController::class, 'checkout'])
+        ->name('checkout.select');
+    // Stripe Checkout開始
+    Route::post('checkout', [MeetingQuotaController::class, 'store'])
+        ->name('checkout.create');
+    // 購入完了画面
+    Route::get('success', [MeetingQuotaController::class, 'success'])
+        ->name('success');
     // 面談回数履歴
     Route::get('history', [MeetingQuotaHistoryController::class, 'index'])->name('history');
 });
