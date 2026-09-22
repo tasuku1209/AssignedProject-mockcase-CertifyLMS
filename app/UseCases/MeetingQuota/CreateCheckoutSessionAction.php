@@ -61,7 +61,7 @@ final class CreateCheckoutSessionAction
                 ],
                 'success_url' => route('meeting-quota.success')
                     .'?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => route('meeting-quota.checkout'),
+                'cancel_url' => route('meeting-quota.checkout.select'),
                 'metadata' => [
                     'payment_id' => $payment->id,
                 ],

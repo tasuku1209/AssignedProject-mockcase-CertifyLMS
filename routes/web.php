@@ -596,7 +596,7 @@ Route::middleware(['auth', 'role:coach', 'active-learning'])
 Route::middleware(['auth', 'role:student', 'active-learning'])->prefix('meeting-quota')->name('meeting-quota.')->group(function () {
     // 追加面談購入画面
     Route::get('checkout', [MeetingQuotaController::class, 'checkout'])
-        ->name('checkout');
+        ->name('checkout.select');
     // Stripe Checkout開始
     Route::post('checkout', [MeetingQuotaController::class, 'store'])
         ->name('checkout.create');

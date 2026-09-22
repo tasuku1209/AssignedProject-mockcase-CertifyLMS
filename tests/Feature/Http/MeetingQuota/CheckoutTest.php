@@ -20,7 +20,7 @@ class CheckoutTest extends TestCase
 
         // Act
         $response = $this->actingAs($student)
-            ->get(route('meeting-quota.checkout'));
+            ->get(route('meeting-quota.checkout.select'));
 
         // Assert
         $response->assertOk();
@@ -63,7 +63,7 @@ class CheckoutTest extends TestCase
 
         // Act
         $response = $this->actingAs($student)
-            ->get(route('meeting-quota.checkout'));
+            ->get(route('meeting-quota.checkout.select'));
 
         // Assert
         $response->assertOk();
@@ -88,7 +88,7 @@ class CheckoutTest extends TestCase
 
         // Act & Assert
         $this->actingAs($coach)
-            ->get(route('meeting-quota.checkout'))
+            ->get(route('meeting-quota.checkout.select'))
             ->assertForbidden();
     }
 }
