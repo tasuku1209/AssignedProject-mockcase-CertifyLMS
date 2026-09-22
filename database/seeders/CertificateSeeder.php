@@ -14,6 +14,7 @@ use App\Models\Certification;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatusLog;
 use App\Models\User;
+use App\UseCases\Certificate\GeneratePdfAction;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -35,7 +36,7 @@ use Illuminate\Support\Str;
  */
 final class CertificateSeeder extends Seeder
 {
-    public function run(): void
+    public function run(GeneratePdfAction $generatePdf): void
     {
         $graduatedStudents = User::query()
             ->where('role', UserRole::Student->value)
@@ -67,7 +68,7 @@ final class CertificateSeeder extends Seeder
             }
 
             $enrollment = $this->createPastEnrollment($student, $certification, $i);
-            $this->issueCertificateForEnrollment($enrollment);
+            $this->issueCertificateForEnrollment($enrollment, $generatePdf);
         }
     }
 
@@ -117,8 +118,10 @@ final class CertificateSeeder extends Seeder
     /**
      * Certificate を 1 件発行する。
      */
-    private function issueCertificateForEnrollment(Enrollment $enrollment): void
-    {
+    private function issueCertificateForEnrollment(
+        Enrollment $enrollment,
+        GeneratePdfAction $generatePdf,
+    ): void {
         $issuedAt = $enrollment->passed_at ?? now();
 
         $certificate = Certificate::factory()
@@ -128,5 +131,7 @@ final class CertificateSeeder extends Seeder
                 'issued_at' => $issuedAt,
             ])
             ->create();
+
+        $generatePdf($certificate);
     }
 }
