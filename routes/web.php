@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AiChatConversationController;
+use App\Http\Controllers\AiChatMessageController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\BrowseController;
+use App\Http\Controllers\CertificateDownloadController;
 use App\Http\Controllers\CertificationCatalogController;
 use App\Http\Controllers\CertificationCategoryController;
 use App\Http\Controllers\CertificationCoachAssignmentController;
@@ -17,10 +20,12 @@ use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\EnrollmentGoalController;
 use App\Http\Controllers\EnrollmentManagementController;
 use App\Http\Controllers\EnrollmentNoteController;
+use App\Http\Controllers\GoogleCredentialController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\LearningHourTargetController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\MeetingPackController;
+use App\Http\Controllers\MeetingQuotaController;
 use App\Http\Controllers\MeetingQuotaHistoryController;
 use App\Http\Controllers\MockExamAnswerController;
 use App\Http\Controllers\MockExamCatalogController;
@@ -49,9 +54,11 @@ use App\Http\Controllers\Settings\AvatarController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
 use App\Http\Controllers\WeakDrillResultController;
+use App\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -69,6 +76,17 @@ Route::get('/onboarding/{invitation}', [OnboardingController::class, 'show'])
 Route::post('/onboarding/{invitation}', [OnboardingController::class, 'store'])
     ->middleware('signed')
     ->name('onboarding.store');
+
+// ============================================================
+// Stripe Webhook（決済確定）
+// ============================================================
+
+// Stripe からの Webhook を受信する公開エンドポイント。
+// Stripe の署名検証を Controller / Action 側で行うため、auth・role middleware は適用しない。
+// Stripe からのリクエストには CSRF トークンが含まれないため、CSRF 検証を除外する。
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])
+    ->withoutMiddleware([VerifyCsrfToken::class])
+    ->name('webhooks.stripe');
 
 // ============================================================
 // 認証後の全ロール共通ルート
@@ -125,6 +143,16 @@ Route::middleware(['auth', 'role:student', 'active-learning'])->group(function (
     // 修了証受領(受講生自己発火、graduated は active-learning でブロックされるため新規受領不可)
     Route::post('enrollments/{enrollment}/receive-certificate', [ReceiveCertificateController::class, 'store'])
         ->name('enrollments.receiveCertificate');
+});
+
+// ============================================================
+// 修了証 — ダウンロード
+// ============================================================
+Route::middleware('auth')->group(function () {
+    Route::get(
+        'certificates/{certificate}/download',
+        [CertificateDownloadController::class, 'download']
+    )->name('certificates.download');
 });
 
 // ============================================================
@@ -560,9 +588,34 @@ Route::middleware(['auth', 'role:coach'])
     });
 
 // ============================================================
-// 受講生専用ルート(受講中=in_progress のみ通過)
+// コーチ専用ルート — Google Calendar 連携
+// ============================================================
+
+Route::middleware(['auth', 'role:coach', 'active-learning'])
+    ->prefix('settings/google-calendar')
+    ->name('settings.google-calendar.')
+    ->group(function () {
+        Route::get('/connect', [GoogleCredentialController::class, 'redirect'])
+            ->name('redirect');
+        Route::get('/callback', [GoogleCredentialController::class, 'callback'])
+            ->name('callback');
+        Route::delete('/', [GoogleCredentialController::class, 'destroy'])
+            ->name('destroy');
+    });
+
+// ============================================================
+// 受講生専用ルート(受講中=in_progress のみ通過) / 面談回数購入フロー
 // ============================================================
 Route::middleware(['auth', 'role:student', 'active-learning'])->prefix('meeting-quota')->name('meeting-quota.')->group(function () {
+    // 追加面談購入画面
+    Route::get('checkout', [MeetingQuotaController::class, 'checkout'])
+        ->name('checkout.select');
+    // Stripe Checkout開始
+    Route::post('checkout', [MeetingQuotaController::class, 'store'])
+        ->name('checkout.create');
+    // 購入完了画面
+    Route::get('success', [MeetingQuotaController::class, 'success'])
+        ->name('success');
     // 面談回数履歴
     Route::get('history', [MeetingQuotaHistoryController::class, 'index'])->name('history');
 });
@@ -674,3 +727,30 @@ Route::middleware(['auth', 'role:student', 'active-learning'])->group(function (
     Route::get('notifications/{notification}', [NotificationController::class, 'show'])
         ->name('notifications.show');
 });
+
+// ============================================================
+// AIチャット — 受講生専用
+// ============================================================
+if (config('ai-chat.enabled')) {
+    Route::middleware([
+        'auth',
+        'role:student',
+        'active-learning',
+    ])
+        ->prefix('ai-chat')
+        ->name('ai-chat.')
+        ->group(function () {
+            Route::get('/', [AiChatConversationController::class, 'index'])
+                ->name('index');
+            Route::post('conversations', [AiChatConversationController::class, 'store'])
+                ->name('conversations.store');
+            Route::get('conversations/{conversation}', [AiChatConversationController::class, 'show'])
+                ->name('conversations.show');
+            Route::patch('conversations/{conversation}', [AiChatConversationController::class, 'update'])
+                ->name('conversations.update');
+            Route::delete('conversations/{conversation}', [AiChatConversationController::class, 'destroy'])
+                ->name('conversations.destroy');
+            Route::post('conversations/{conversation}/messages', [AiChatMessageController::class, 'store'])
+                ->name('conversations.messages.store');
+        });
+}
