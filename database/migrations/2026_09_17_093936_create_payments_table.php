@@ -16,9 +16,8 @@ return new class extends Migration
                 ->constrained('users')
                 ->restrictOnDelete();
             $table->foreignUlid('meeting_pack_id')
-                ->nullable()
                 ->constrained('meeting_packs')
-                ->nullOnDelete();
+                ->restrictOnDelete();
             $table->string('stripe_checkout_session_id', 255)
                 ->nullable()
                 ->unique();
