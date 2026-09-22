@@ -34,6 +34,8 @@ class AiChatConversationController extends Controller
             return view('ai-chat.empty-state');
         }
 
+        request()->session()->keep('success');
+
         return redirect()
             ->route('ai-chat.conversations.show', $conversation);
     }

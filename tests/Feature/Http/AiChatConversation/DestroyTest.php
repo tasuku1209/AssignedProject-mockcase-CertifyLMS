@@ -32,11 +32,6 @@ class DestroyTest extends TestCase
 
         $response->assertRedirect(route('ai-chat.index'));
 
-        $response->assertSessionHas(
-            'success',
-            'AI相談を削除しました。',
-        );
-
         $this->assertDatabaseMissing('ai_chat_conversations', [
             'id' => $conversation->id,
         ]);
@@ -72,5 +67,29 @@ class DestroyTest extends TestCase
         $this->assertDatabaseHas('ai_chat_messages', [
             'id' => $message->id,
         ]);
+    }
+
+    public function test_student_can_see_success_flash_message_after_deleting_conversation(): void
+    {
+        // Arrange
+        $student = User::factory()->student()->create();
+
+        $conversation = AiChatConversation::factory()->for($student)->create();
+
+        AiChatConversation::factory()->for($student)->create();
+
+        // Act
+        $response = $this->actingAs($student)
+            ->followingRedirects()
+            ->delete(
+                route(
+                    'ai-chat.conversations.destroy',
+                    $conversation,
+                ),
+            );
+
+        // Assert
+        $response->assertOk();
+        $response->assertSee('AI相談を削除しました。');
     }
 }
