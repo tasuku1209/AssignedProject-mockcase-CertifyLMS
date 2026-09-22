@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\AiChatConversation;
+use App\Models\AiChatMessage;
 use App\Models\Announcement;
 use App\Models\Certification;
 use App\Models\CertificationCategory;
@@ -33,6 +35,8 @@ use App\Models\SectionQuestion;
 use App\Models\SectionQuestionAnswer;
 use App\Models\SectionQuestionAttempt;
 use App\Models\User;
+use App\Policies\AiChatConversationPolicy;
+use App\Policies\AiChatMessagePolicy;
 use App\Policies\AnnouncementPolicy;
 use App\Policies\CertificationCategoryPolicy;
 use App\Policies\CertificationPolicy;
@@ -89,6 +93,8 @@ class AuthServiceProvider extends ServiceProvider
         Part::class => PartPolicy::class,
         Chapter::class => ChapterPolicy::class,
         ChatRoom::class => ChatRoomPolicy::class,
+        AiChatConversation::class => AiChatConversationPolicy::class,
+        AiChatMessage::class => AiChatMessagePolicy::class,
         Section::class => SectionPolicy::class,
         SectionImage::class => SectionImagePolicy::class,
         SectionQuestion::class => SectionQuestionPolicy::class,

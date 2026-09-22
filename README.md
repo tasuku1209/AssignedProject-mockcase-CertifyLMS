@@ -142,6 +142,8 @@ sail bin pint --test     # 整形漏れの確認（CI 相当のチェック）
 
 - `PUSHER_*` — チャットのリアルタイム配信に使用します。有効にする場合は Pusher のキーを取得して設定し、`BROADCAST_DRIVER=pusher` に変更してください。未設定（既定の `BROADCAST_DRIVER=log`）でもメッセージの送受信自体は動作し、相手画面へのリアルタイム反映のみ行われません
 
+* `GEMINI_API_KEY` — AI チャット（Gemini）の利用に使用します。Google AI Studio 等で API キーを取得し、`.env` に設定してください。未設定の場合、AI チャットからの質問に対して AI の応答を利用できません
+
 ## Stripe 決済連携
 
 面談回数追加購入の決済に Stripe Checkout を使用しています。
@@ -262,6 +264,7 @@ checkout.session.completed
 * 購入履歴に決済内容が表示される
 
 以上で、Stripe Checkoutでの決済からWebhookの受信、アプリケーション側での決済確定・面談回数追加までを確認できます。
+
 ### Google Calendar
 
 コーチの面談予約と Google Calendar を連携する場合は、Google Cloud で OAuth 2.0 クライアントを作成し、以下の環境変数を設定してください。

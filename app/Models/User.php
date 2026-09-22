@@ -314,6 +314,16 @@ class User extends Authenticatable
     }
 
     /**
+     * 自身が所有する AI チャット相談一覧。
+     *
+     * @return HasMany<AiChatConversation, $this>
+     */
+    public function aiChatConversations(): HasMany
+    {
+        return $this->hasMany(AiChatConversation::class);
+    }
+
+    /**
      * Google Calendar の連携情報。
      *
      * @return HasOne<GoogleCredential, $this>
@@ -340,7 +350,7 @@ class User extends Authenticatable
      */
     public function receivesBroadcastNotificationsOn(): string
     {
-        return 'notifications.'.$this->id;
+        return 'notifications.' . $this->id;
     }
 
     /**
