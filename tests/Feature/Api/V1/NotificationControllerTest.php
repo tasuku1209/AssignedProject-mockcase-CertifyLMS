@@ -71,13 +71,13 @@ class NotificationControllerTest extends TestCase
         );
     }
 
-    public function test_notification_index_returns_latest_10_notifications(): void
+    public function test_notification_index_returns_latest_20_notifications(): void
     {
         // Arrange
         $student = User::factory()->student()->create();
 
-        for ($i = 1; $i <= 12; $i++) {
-            $createdAt = now()->subMinutes(12 - $i);
+        for ($i = 1; $i <= 21; $i++) {
+            $createdAt = now()->subMinutes(21 - $i);
 
             DatabaseNotification::create([
                 'id' => (string) Str::uuid(),
@@ -102,7 +102,7 @@ class NotificationControllerTest extends TestCase
 
         // Assert
         $response->assertOk()
-            ->assertJsonCount(10, 'data');
+            ->assertJsonCount(20, 'data');
 
         $titles = collect($response->json('data'))
             ->pluck('title')
@@ -110,6 +110,15 @@ class NotificationControllerTest extends TestCase
 
         $this->assertSame(
             [
+                '通知21',
+                '通知20',
+                '通知19',
+                '通知18',
+                '通知17',
+                '通知16',
+                '通知15',
+                '通知14',
+                '通知13',
                 '通知12',
                 '通知11',
                 '通知10',
@@ -120,6 +129,7 @@ class NotificationControllerTest extends TestCase
                 '通知5',
                 '通知4',
                 '通知3',
+                '通知2',
             ],
             $titles,
         );

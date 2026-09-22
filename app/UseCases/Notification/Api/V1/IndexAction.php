@@ -21,7 +21,7 @@ final class IndexAction
     public function __invoke(
         User $auth,
         string $tab = 'all',
-        int $limit = 10,
+        int $limit = 20,
     ): array {
         if (! in_array($tab, ['all', 'unread'], true)) {
             abort(404);
