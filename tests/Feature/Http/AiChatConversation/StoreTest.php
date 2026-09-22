@@ -138,7 +138,7 @@ class StoreTest extends TestCase
         $this->assertNull($conversation->section_id);
     }
 
-    public function test_conversation_is_created_with_learning_enrollment_when_default_enrollment_is_not_set(): void
+    public function test_conversation_is_created_without_enrollment_when_default_enrollment_is_not_set(): void
     {
         $student = User::factory()->student()->create([
             'default_enrollment_id' => null,
@@ -146,7 +146,7 @@ class StoreTest extends TestCase
 
         $certification = Certification::factory()->create();
 
-        $enrollment = Enrollment::factory()
+        Enrollment::factory()
             ->for($student)
             ->for($certification)
             ->learning()
@@ -163,7 +163,7 @@ class StoreTest extends TestCase
 
         $this->assertDatabaseHas('ai_chat_conversations', [
             'user_id' => $student->id,
-            'enrollment_id' => $enrollment->id,
+            'enrollment_id' => null,
             'section_id' => null,
         ]);
     }

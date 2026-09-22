@@ -89,20 +89,6 @@ final class StoreAction
                     EnrollmentStatus::Learning->value,
                 )
                 ->first();
-
-            $enrollment ??= $user->enrollments()
-                ->where(
-                    'status',
-                    EnrollmentStatus::Learning->value,
-                )
-                ->orderBy('id')
-                ->first();
-
-            if ($enrollment === null) {
-                throw ValidationException::withMessages([
-                    'section_id' => '現在受講中の資格を取得できません。',
-                ]);
-            }
         }
 
         $result = DB::transaction(
@@ -128,7 +114,7 @@ final class StoreAction
 
                 $conversation = AiChatConversation::create([
                     'user_id' => $user->id,
-                    'enrollment_id' => $enrollment->id,
+                    'enrollment_id' => $enrollment?->id,
                     'section_id' => $sectionId,
                     'title' => null,
                     'auto_title_enabled' => true,

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Enums\EnrollmentStatus;
 use App\Models\AiChatConversation;
 use App\Models\AiChatMessage;
+use App\Models\Certification;
 use App\Models\Enrollment;
 use App\Models\Section;
 use App\Models\User;
@@ -44,42 +44,37 @@ final class AiChatSeeder extends Seeder
             return;
         }
 
+        $certification = Certification::query()
+            ->where('name', '基本情報技術者試験')
+            ->first();
+
+        if ($certification === null) {
+            $this->command?->warn(
+                'AiChatSeeder: 基本情報技術者試験が存在しません。先に CertificationSeeder を実行してください。',
+            );
+
+            return;
+        }
+
         $enrollment = $student->enrollments()
-            ->where('status', EnrollmentStatus::Learning->value)
-            ->get()
-            ->first(function (Enrollment $enrollment): bool {
-                return Section::query()
-                    ->whereHas(
-                        'chapter.part',
-                        fn ($query) => $query->where(
-                            'certification_id',
-                            $enrollment->certification_id,
-                        ),
-                    )
-                    ->exists();
-            });
+            ->where('certification_id', $certification->id)
+            ->first();
 
         if ($enrollment === null) {
             $this->command?->warn(
-                'AiChatSeeder: Sectionが存在する受講中資格が見つかりません。先に EnrollmentSeeder と ContentSeeder を実行してください。',
+                'AiChatSeeder: 基本情報技術者試験の受講中Enrollmentが見つかりません。先に EnrollmentSeeder を実行してください。',
             );
 
             return;
         }
 
         $section = Section::query()
-            ->whereHas(
-                'chapter.part',
-                fn ($query) => $query->where(
-                    'certification_id',
-                    $enrollment->certification_id,
-                ),
-            )
+            ->where('title', '1.1 2 進数の表現')
             ->first();
 
         if ($section === null) {
             $this->command?->warn(
-                'AiChatSeeder: 対象資格のSectionが存在しません。先に ContentSeeder を実行してください。',
+                'AiChatSeeder: 基本情報技術者試験の対象Sectionが存在しません。先に ContentSeeder を実行してください。',
             );
 
             return;
