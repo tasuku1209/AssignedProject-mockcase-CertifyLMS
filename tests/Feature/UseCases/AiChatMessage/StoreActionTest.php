@@ -305,6 +305,58 @@ class StoreActionTest extends TestCase
         );
     }
 
+    public function test_auto_title_is_not_updated_when_auto_title_setting_is_disabled(): void
+    {
+        // Arrange
+        config([
+            'ai-chat.auto_title.enabled' => false,
+        ]);
+
+        $student = User::factory()->student()->create();
+
+        $conversation = AiChatConversation::factory()
+            ->for($student)
+            ->create([
+                'title' => '新規相談',
+                'auto_title_enabled' => false,
+            ]);
+
+        $this->mock(GeminiService::class, function ($mock): void {
+            $mock->shouldReceive('generate')
+                ->once()
+                ->andReturn([
+                    'text' => 'AIからの回答です。',
+                    'title' => 'AIが生成した新しいタイトル',
+                    'model' => 'gemini-test-model',
+                    'input_tokens' => 100,
+                    'output_tokens' => 200,
+                ]);
+        });
+
+        $action = app(StoreAction::class);
+
+        // Act
+        $result = $action(
+            $conversation,
+            $student,
+            [
+                'content' => 'テスト用の質問です。',
+            ],
+        );
+
+        // Assert
+        $this->assertSame(
+            '新規相談',
+            $result['conversation']->title,
+        );
+
+        $this->assertDatabaseHas('ai_chat_conversations', [
+            'id' => $conversation->id,
+            'title' => '新規相談',
+            'auto_title_enabled' => false,
+        ]);
+    }
+
     public function test_signature_is_conversation_user_array(): void
     {
         $reflection = new \ReflectionMethod(

@@ -116,8 +116,10 @@ final class StoreAction
                     'user_id' => $user->id,
                     'enrollment_id' => $enrollment?->id,
                     'section_id' => $sectionId,
-                    'title' => null,
-                    'auto_title_enabled' => true,
+                    'title' => config('ai-chat.auto_title.enabled')
+                        ? null
+                        : '新規相談',
+                    'auto_title_enabled' => config('ai-chat.auto_title.enabled'),
                     'last_message_at' => null,
                 ]);
 

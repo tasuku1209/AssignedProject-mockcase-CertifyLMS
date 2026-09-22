@@ -102,7 +102,10 @@ class StoreAction
                 'response_time_ms' => $responseTimeMs,
             ]);
 
-            if ($conversation->auto_title_enabled) {
+            if (
+                config('ai-chat.auto_title.enabled')
+                && $conversation->auto_title_enabled
+            ) {
                 $conversation->update([
                     'title' => Str::limit(
                         $result['title'],

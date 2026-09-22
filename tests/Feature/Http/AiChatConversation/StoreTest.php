@@ -302,4 +302,32 @@ class StoreTest extends TestCase
             ])
             ->assertForbidden();
     }
+
+    public function test_conversation_is_created_with_default_title_when_auto_title_setting_is_disabled(): void
+    {
+        // Arrange
+        config([
+            'ai-chat.auto_title.enabled' => false,
+        ]);
+
+        $student = User::factory()->student()->create();
+
+        // Act
+        $response = $this->actingAs($student)->postJson(
+            route('ai-chat.conversations.store'),
+            [
+                'source' => 'widget',
+            ],
+        );
+
+        // Assert
+        $response->assertStatus(201);
+
+        $this->assertDatabaseHas('ai_chat_conversations', [
+            'user_id' => $student->id,
+            'section_id' => null,
+            'title' => '新規相談',
+            'auto_title_enabled' => false,
+        ]);
+    }
 }
