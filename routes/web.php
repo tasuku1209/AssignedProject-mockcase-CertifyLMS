@@ -666,7 +666,12 @@ Route::middleware(['auth', 'role:student,coach'])->group(function () {
 // AIチャット — 受講生専用
 // ============================================================
 
-Route::middleware(['auth', 'role:student', 'active-learning'])
+Route::middleware([
+    'auth',
+    'role:student',
+    'active-learning',
+    'ai-chat-enabled',
+])
     ->prefix('ai-chat')
     ->name('ai-chat.')
     ->group(function () {
