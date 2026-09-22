@@ -34,6 +34,7 @@ class DatabaseSeeder extends Seeder
             QaReplySeeder::class,
             AvatarSeeder::class,
             NotificationSeeder::class,
+            AnnouncementSeeder::class,
         ]);
     }
 }
