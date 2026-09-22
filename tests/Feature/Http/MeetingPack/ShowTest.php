@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Http\MeetingPack;
 
 use App\Models\MeetingPack;
+use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -46,6 +47,52 @@ class ShowTest extends TestCase
                     && $plan->updatedBy->is($updater);
             })
             ->assertSee('追加面談3回パック');
+    }
+
+    public function test_meeting_pack_detail_loads_at_most_20_latest_payments(): void
+    {
+        // Arrange
+        $admin = User::factory()->admin()->create();
+        $meetingPack = MeetingPack::factory()->create();
+
+        $payments = collect();
+
+        for ($i = 1; $i <= 21; $i++) {
+            $payments->push(
+                Payment::factory()
+                    ->for($meetingPack)
+                    ->create([
+                        'created_at' => now()->subMinutes(21 - $i),
+                    ])
+            );
+        }
+
+        $oldestPayment = $payments->first();
+        $latestPayment = $payments->last();
+
+        // Act
+        $response = $this->actingAs($admin)
+            ->get(route('admin.meeting-packs.show', $meetingPack));
+
+        // Assert
+        $response
+            ->assertOk()
+            ->assertViewHas('plan', function (MeetingPack $plan) use (
+                $oldestPayment,
+                $latestPayment,
+            ): bool {
+                $loadedPayments = $plan->payments;
+
+                return $plan->relationLoaded('payments')
+                    && $loadedPayments->count() === 20
+                    && $loadedPayments->first()->is($latestPayment)
+                    && ! $loadedPayments->contains(
+                        fn (Payment $payment): bool => $payment->is($oldestPayment)
+                    )
+                    && $loadedPayments->every(
+                        fn (Payment $payment): bool => $payment->relationLoaded('user')
+                    );
+            });
     }
 
     public function test_student_cannot_view_meeting_pack_detail(): void

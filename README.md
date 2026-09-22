@@ -144,6 +144,163 @@ sail bin pint --test     # 整形漏れの確認（CI 相当のチェック）
 
 * `GEMINI_API_KEY` — AI チャット（Gemini）の利用に使用します。Google AI Studio 等で API キーを取得し、`.env` に設定してください。未設定の場合、AI チャットからの質問に対して AI の応答を利用できません
 
+## Stripe 決済連携
+
+面談回数追加購入の決済に Stripe Checkout を使用しています。
+
+### 新しく必要になった設定
+
+Stripe のテスト環境を利用するため、`.env` に以下を設定してください。
+
+```dotenv
+STRIPE_SECRET=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+* `STRIPE_SECRET` — Stripe APIへの接続に使用するテスト用Secret Key
+* `STRIPE_WEBHOOK_SECRET` — Stripeから送信されるWebhookの署名検証に使用するSigning Secret
+
+`STRIPE_SECRET` は Stripe Dashboard のテスト環境から取得してください。
+
+`STRIPE_WEBHOOK_SECRET` は、Stripe CLIでWebhookの転送を開始した際に表示される `whsec_...` を設定します。
+
+環境変数を設定・変更した場合は、以下を実行してください。
+
+```bash
+sail artisan config:clear
+```
+
+### Stripeの商品・Price設定
+
+面談回数追加購入では、面談パックごとにStripeのPrice IDを使用します。
+
+デモ環境では、MeetingPackシーダーに設定されているStripe Price IDを使用します。
+
+自分のStripeテスト環境で実際に決済を試す場合、自分のStripeテスト環境でProduct / Priceを作成し、シーダーの `stripe_price_id` を自分のPrice ID（`price_...`）に変更してください。
+
+Price IDは秘密情報ではないため、シーダーに記載してGit管理できます。
+
+### Stripeからの通知受信を実際に試す手順
+
+Stripe CLIを使用して、Stripeから送信されるWebhookをローカルのLaravelアプリケーションへ転送できます。
+
+#### 1. Stripe CLIでログイン
+
+Stripe CLIをインストールした後、以下を実行します。
+
+```bash
+stripe login
+```
+
+#### 2. Webhookの転送を開始
+
+Laravel Sailを起動した状態で、別ターミナルから以下を実行します。
+
+```bash
+export STRIPE_API_KEY="$(grep '^STRIPE_SECRET=' .env | cut -d '=' -f2-)"
+
+stripe listen \
+  --api-key "$STRIPE_API_KEY" \
+  --events checkout.session.completed \
+  --forward-to localhost:8000/webhooks/stripe
+```
+
+実行すると、以下のようなWebhook Signing Secretが表示されます。
+
+```text
+Ready! Your webhook signing secret is 'whsec_...'
+```
+
+表示された `whsec_...` を `.env` の `STRIPE_WEBHOOK_SECRET` に設定します。
+
+```dotenv
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+設定後、別ターミナルで以下を実行します。
+
+```bash
+sail artisan config:clear
+```
+
+`stripe listen` は、Webhookのテスト中は起動したままにしてください。
+
+#### 3. Stripe Checkoutで決済する
+
+1. 受講生アカウントでログインします。
+2. 面談回数追加購入画面を開きます。
+3. 公開済みの面談パックを選択します。
+4. Stripe Checkoutへ遷移します。
+5. Stripeのテストカードで決済します。
+
+テストカードには以下を使用できます。
+
+```text
+カード番号：4242 4242 4242 4242
+有効期限：任意の将来日
+CVC：任意の3桁
+郵便番号：任意
+```
+
+#### 4. Webhookの受信を確認する
+
+決済が完了すると、Stripe CLI側に以下のイベントが表示されます。
+
+```text
+checkout.session.completed
+```
+
+続いて、WebhookがLaravelへ正常に転送されると、以下のような結果が表示されます。
+
+```text
+200 POST http://localhost:8000/webhooks/stripe
+```
+
+アプリケーション側では、以下を確認します。
+
+* Paymentのステータスが「決済成功」になる
+* 購入した面談パックの回数分、面談回数が追加される
+* 面談回数の残数に購入分が反映される
+* 購入履歴に決済内容が表示される
+
+以上で、Stripe Checkoutでの決済からWebhookの受信、アプリケーション側での決済確定・面談回数追加までを確認できます。
+
+### Google Calendar
+
+コーチの面談予約と Google Calendar を連携する場合は、Google Cloud で OAuth 2.0 クライアントを作成し、以下の環境変数を設定してください。
+
+```env
+GOOGLE_CLIENT_ID=取得したクライアントID
+GOOGLE_CLIENT_SECRET=取得したクライアントシークレット
+```
+
+Google Cloud の設定内容は以下のとおりです。
+
+1. Google Cloud プロジェクトを作成します。
+2. **Google Calendar API** を有効にします。
+3. OAuth 同意画面（Google Auth Platform）を設定します。
+4. アプリの対象を `External` に設定します。
+5. 開発・テスト用の場合は、OAuth のテストユーザーに利用する Google アカウントを追加します。
+6. OAuth クライアント ID を **Web application** として作成します。
+7. 承認済みのリダイレクト URI に以下を登録します。
+
+```text
+http://localhost:8000/settings/google-calendar/callback
+```
+
+8. 作成した OAuth クライアントのクライアント ID とクライアントシークレットを `.env` に設定します。
+
+Google Calendar 連携には以下の OAuth スコープを使用します。
+
+```text
+https://www.googleapis.com/auth/calendar.events.owned
+https://www.googleapis.com/auth/calendar.events.freebusy
+https://www.googleapis.com/auth/calendar.calendars.readonly
+```
+
+設定後、コーチでログインし、設定画面から Google Calendar を連携してください。
+
+Google Calendar 連携は任意です。未設定・未連携のコーチは、従来どおり Google Calendar を使用せずに面談予約を利用できます。
 
 
 新しい環境変数やセットアップ手順を追加した場合は、`.env.example` と本 README に追記し、チームの誰でも環境を再現できる状態を保ってください。
