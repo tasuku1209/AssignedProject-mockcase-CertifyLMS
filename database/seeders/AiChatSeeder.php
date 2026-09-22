@@ -21,7 +21,7 @@ use Illuminate\Support\Carbon;
  * - 教材に紐づかない会話を1件生成
  * - 教材に紐づく会話を1件生成
  * - 過去の会話履歴を生成
- * - 当日の成功回答数を18件生成
+ * - 当日の成功回答数を40件生成
  * - AI回答がErrorとなった履歴を1件生成
  *
  * 依存順序:
@@ -95,7 +95,7 @@ final class AiChatSeeder extends Seeder
     /**
      * 教材に紐づかない会話を生成する。
      *
-     * 当日の成功回答18件を含む。
+     * 当日の成功回答40件を含む。
      */
     private function seedWithoutSectionConversation(
         User $student,
@@ -111,8 +111,8 @@ final class AiChatSeeder extends Seeder
             ])
             ->create();
 
-        for ($i = 0; $i < 13; $i++) {
-            $createdAt = now()->subMinutes((13 - $i) * 5);
+        for ($i = 0; $i < 40; $i++) {
+            $createdAt = now()->subMinutes((40 - $i) * 5);
 
             $this->createMessagePair(
                 $conversation,
