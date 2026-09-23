@@ -29,6 +29,10 @@ use App\Services\CoachMeetingLoadService;
 use App\Services\GoogleCalendarService;
 use App\Services\MeetingAvailabilityService;
 use App\Services\MeetingQuotaService;
+use App\UseCases\Meeting\CreateFallbackAction;
+use App\UseCases\Meeting\IndexAction;
+use App\UseCases\Meeting\IndexAsCoachAction;
+use App\UseCases\Meeting\ShowAction;
 use App\UseCases\MeetingQuota\ConsumeQuotaAction;
 use App\UseCases\MeetingQuota\RefundQuotaAction;
 use Carbon\Carbon;
@@ -53,50 +57,37 @@ class MeetingController extends Controller
     /**
      * 受講生本人の面談一覧。filter (upcoming/past/all) クエリで履歴を切り替える。
      */
-    public function index(IndexRequest $request, MeetingQuotaService $meetingQuota): View
-    {
+    public function index(
+        IndexRequest $request,
+        IndexAction $action,
+    ): View {
         $filter = $request->validated('filter') ?? 'upcoming';
 
-        $query = Meeting::query()
-            ->with(['enrollment.certification', 'coach'])
-            ->forStudent($request->user())
-            ->orderByDesc('scheduled_at');
-
-        $meetings = match ($filter) {
-            'past' => $query->past()->paginate(20),
-            'all' => $query->paginate(20),
-            default => $query->upcoming()->paginate(20),
-        };
-
         return view('meeting.index', [
-            'meetings' => $meetings,
+            ...$action($request->user(), $filter),
             'filter' => $filter,
-            'meetingsRemaining' => $meetingQuota->remaining($request->user()),
         ]);
     }
 
     /**
      * コーチ宛の面談一覧。担当受講生 / 受講登録での絞り込みを併せて提供する。
      */
-    public function indexAsCoach(IndexAsCoachRequest $request): View
-    {
+    public function indexAsCoach(
+        IndexAsCoachRequest $request,
+        IndexAsCoachAction $action,
+    ): View {
         $filters = $request->validated();
+
         $filter = $filters['filter'] ?? 'upcoming';
         $studentId = $filters['student'] ?? null;
         $enrollmentId = $filters['enrollment'] ?? null;
 
-        $query = Meeting::query()
-            ->with(['enrollment.certification', 'student'])
-            ->forCoach($request->user())
-            ->when($studentId, fn ($q, $id) => $q->where('student_id', $id))
-            ->when($enrollmentId, fn ($q, $id) => $q->where('enrollment_id', $id));
-
-        // upcoming: 次の面談を一番上に置く (昇順) / past + all: 直近の活動を一番上 (降順)
-        $meetings = match ($filter) {
-            'past' => $query->past()->orderByDesc('scheduled_at')->paginate(20),
-            'all' => $query->orderByDesc('scheduled_at')->paginate(20),
-            default => $query->upcoming()->orderBy('scheduled_at')->paginate(20),
-        };
+        $meetings = $action(
+            $request->user(),
+            $studentId,
+            $enrollmentId,
+            $filter,
+        );
 
         return view('meeting.coach.index', [
             'meetings' => $meetings,
@@ -109,20 +100,14 @@ class MeetingController extends Controller
     /**
      * 面談詳細(当事者共通)。Policy で coach/student の閲覧範囲を絞る。
      */
-    public function show(Meeting $meeting): View
-    {
+    public function show(
+        Meeting $meeting,
+        ShowAction $action,
+    ): View {
         $this->authorize('view', $meeting);
 
-        $meeting->loadMissing([
-            'enrollment.certification',
-            'coach',
-            'student',
-            'canceledBy',
-            'meetingMemo',
-        ]);
-
         return view('meeting.show', [
-            'meeting' => $meeting,
+            'meeting' => $action($meeting),
         ]);
     }
 
@@ -149,17 +134,13 @@ class MeetingController extends Controller
      * `resolve-default-enrollment` Middleware が default 資格に redirect するため、
      * 本 method に到達するのは default 未設定 + 残存 Enrollment が 0 件 or 2+ 件のケース。
      */
-    public function createFallback(): View
+    public function createFallback(CreateFallbackAction $action): View
     {
+        /** @var User $user */
         $user = auth()->user();
-        $enrollments = $user
-            ?->enrollments()
-            ->whereIn('status', [EnrollmentStatus::Learning->value, EnrollmentStatus::Passed->value])
-            ->with('certification')
-            ->get();
 
         return view('meeting.empty-state', [
-            'enrollments' => $enrollments ?? collect(),
+            'enrollments' => $action($user),
         ]);
     }
 
