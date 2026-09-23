@@ -6,6 +6,9 @@ namespace App\Http\Controllers;
 
 use App\Enums\EnrollmentStatus;
 use App\Enums\MeetingStatus;
+use App\Enums\UserRole;
+use App\Enums\UserStatus;
+use App\Exceptions\GoogleCalendar\GoogleOAuthTokenException;
 use App\Exceptions\MeetingQuota\InsufficientMeetingQuotaException;
 use App\Exceptions\Mentoring\MeetingAlreadyStartedException;
 use App\Exceptions\Mentoring\MeetingNoAvailableCoachException;
@@ -20,12 +23,16 @@ use App\Models\Enrollment;
 use App\Models\Meeting;
 use App\Models\MeetingMemo;
 use App\Models\User;
+use App\Notifications\MeetingCanceledNotification;
+use App\Notifications\MeetingReservedNotification;
 use App\Services\CoachMeetingLoadService;
+use App\Services\GoogleCalendarService;
 use App\Services\MeetingAvailabilityService;
 use App\Services\MeetingQuotaService;
 use App\UseCases\MeetingQuota\ConsumeQuotaAction;
 use App\UseCases\MeetingQuota\RefundQuotaAction;
 use Carbon\Carbon;
+use Google\Service\Exception as GoogleServiceException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -167,6 +174,7 @@ class MeetingController extends Controller
         CoachMeetingLoadService $coachLoadService,
         MeetingQuotaService $quotaService,
         ConsumeQuotaAction $consumeAction,
+        GoogleCalendarService $googleCalendarService,
     ): RedirectResponse {
         $scheduledAt = Carbon::parse($request->validated('scheduled_at'));
         $topic = $request->validated('topic');
@@ -213,8 +221,42 @@ class MeetingController extends Controller
             $transaction = ($consumeAction)($student, $meeting->id);
             $meeting->update(['meeting_quota_transaction_id' => $transaction->id]);
 
+            DB::afterCommit(function () use ($meeting): void {
+                $coach = $meeting->coach;
+
+                if ($coach->status === UserStatus::InProgress) {
+                    $coach->notify(
+                        new MeetingReservedNotification($meeting)
+                    );
+                }
+            });
+
             return $meeting->fresh();
         });
+
+        $meeting->loadMissing('coach.googleCredential');
+
+        $credential = $meeting->coach->googleCredential;
+
+        if ($credential !== null) {
+            try {
+                $googleEventId = $googleCalendarService->createEvent(
+                    credential: $credential,
+                    summary: '面談：'.$meeting->student->name,
+                    start: $meeting->scheduled_at,
+                    end: $meeting->scheduled_at->copy()->addHour(),
+                    meetingUrl: $meeting->meeting_url_snapshot,
+                );
+
+                $meeting->update([
+                    'google_event_id' => $googleEventId,
+                ]);
+            } catch (
+                GoogleOAuthTokenException|GoogleServiceException $e
+            ) {
+                report($e);
+            }
+        }
 
         return redirect()
             ->route('meetings.show', $meeting)
@@ -228,12 +270,13 @@ class MeetingController extends Controller
     public function cancel(
         Meeting $meeting,
         RefundQuotaAction $refundAction,
+        GoogleCalendarService $googleCalendarService,
     ): RedirectResponse {
         $this->authorize('cancel', $meeting);
 
         $actor = auth()->user();
 
-        DB::transaction(function () use ($meeting, $actor) {
+        DB::transaction(function () use ($meeting, $actor, $refundAction) {
             $locked = Meeting::query()->whereKey($meeting->id)->lockForUpdate()->first();
             if ($locked === null || $locked->status !== MeetingStatus::Reserved) {
                 throw MeetingStatusTransitionException::forCancel();
@@ -248,7 +291,54 @@ class MeetingController extends Controller
                 'canceled_by_user_id' => $actor->id,
                 'canceled_at' => now(),
             ]);
+
+            $refundAction($locked->student, $locked->id);
+
+            DB::afterCommit(function () use ($locked, $actor): void {
+                $recipient = $locked->student_id === $actor->id
+                    ? $locked->coach
+                    : $locked->student;
+
+                $shouldNotify = match ($recipient->role) {
+                    UserRole::Student => in_array(
+                        $recipient->status,
+                        [
+                            UserStatus::InProgress,
+                            UserStatus::Graduated,
+                        ],
+                        true,
+                    ),
+                    UserRole::Coach => $recipient->status === UserStatus::InProgress,
+                    default => false,
+                };
+
+                if ($shouldNotify) {
+                    $recipient->notify(
+                        new MeetingCanceledNotification($locked)
+                    );
+                }
+            });
         });
+
+        $meeting->loadMissing('coach.googleCredential');
+
+        $credential = $meeting->coach->googleCredential;
+
+        if (
+            $credential !== null
+            && $meeting->google_event_id !== null
+        ) {
+            try {
+                $googleCalendarService->deleteEvent(
+                    credential: $credential,
+                    eventId: $meeting->google_event_id,
+                );
+            } catch (
+                GoogleOAuthTokenException|GoogleServiceException $e
+            ) {
+                report($e);
+            }
+        }
 
         return redirect()
             ->route('meetings.show', $meeting)
