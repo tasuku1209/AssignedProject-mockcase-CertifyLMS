@@ -88,6 +88,27 @@ class QaThreadPolicyTest extends TestCase
         $this->assertFalse($this->policy->view($coach, $thread));
     }
 
+    public function test_assigned_coach_cannot_view_thread_of_draft_certification(): void
+    {
+        // Arrange
+        $admin = User::factory()->admin()->create();
+        $coach = User::factory()->coach()->create();
+        $certification = Certification::factory()->draft()->create();
+
+        $certification->coaches()->attach($coach->id, [
+            'id' => (string) Str::ulid(),
+            'assigned_by_user_id' => $admin->id,
+            'assigned_at' => now(),
+        ]);
+
+        $thread = QaThread::factory()
+            ->forCertification($certification)
+            ->create();
+
+        // Act & Assert
+        $this->assertFalse($this->policy->view($coach, $thread));
+    }
+
     public function test_student_can_view_thread_for_published_certification(): void
     {
         $student = User::factory()->student()->create();
