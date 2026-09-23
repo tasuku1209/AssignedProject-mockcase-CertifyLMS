@@ -12,8 +12,11 @@ use App\Enums\UserStatus;
 use App\Models\Certificate;
 use App\Models\Certification;
 use App\Models\Enrollment;
+use App\Models\EnrollmentGoal;
+use App\Models\EnrollmentNote;
 use App\Models\EnrollmentStatusLog;
 use App\Models\User;
+use App\UseCases\Certificate\GeneratePdfAction;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -37,7 +40,7 @@ use Illuminate\Support\Carbon;
  */
 final class EnrollmentSeeder extends Seeder
 {
-    public function run(): void
+    public function run(GeneratePdfAction $generatePdf): void
     {
         $publishedCertifications = Certification::query()
             ->where('status', CertificationStatus::Published->value)
@@ -72,7 +75,12 @@ final class EnrollmentSeeder extends Seeder
             $this->enrollFixedStudent($fixedStudent, $publishedCertifications, $admin);
         }
 
-        $this->enrollDemoStudents($demoStudents, $publishedCertifications, $admin);
+        $this->enrollDemoStudents(
+            $demoStudents,
+            $publishedCertifications,
+            $admin,
+            $generatePdf,
+        );
         $this->enrollNoQuotaStudent($publishedCertifications);
     }
 
@@ -143,6 +151,37 @@ final class EnrollmentSeeder extends Seeder
                 ],
             );
 
+            // 1件目の受講登録に、達成済み / 未達成の目標を1件ずつ投入
+            if ($index === 0) {
+                EnrollmentGoal::factory()
+                    ->for($enrollment)
+                    ->unachieved()
+                    ->create();
+
+                EnrollmentGoal::factory()
+                    ->for($enrollment)
+                    ->achieved()
+                    ->create();
+            }
+
+            // 資格の担当コーチにメモを投入
+            $coaches = $certification->coaches;
+
+            foreach ($coaches as $coach) {
+                EnrollmentNote::factory()
+                    ->forEnrollment($enrollment)
+                    ->forAuthor($coach)
+                    ->create();
+            }
+
+            // 管理者にもメモを1件投入
+            if ($admin !== null) {
+                EnrollmentNote::factory()
+                    ->forEnrollment($enrollment)
+                    ->forAuthor($admin)
+                    ->create();
+            }
+
             EnrollmentStatusLog::firstOrCreate(
                 ['enrollment_id' => $enrollment->id, 'to_status' => EnrollmentStatus::Learning->value],
                 [
@@ -161,8 +200,12 @@ final class EnrollmentSeeder extends Seeder
      * @param Collection<int, User> $demoStudents
      * @param Collection<int, Certification> $publishedCerts
      */
-    private function enrollDemoStudents($demoStudents, $publishedCerts, ?User $admin): void
-    {
+    private function enrollDemoStudents(
+        $demoStudents,
+        $publishedCerts,
+        ?User $admin,
+        GeneratePdfAction $generatePdf,
+    ): void {
         $patterns = [
             ['state' => 'learning', 'examDays' => 60],
             ['state' => 'learning', 'examDays' => 14, 'mockPractice' => true],
@@ -200,10 +243,28 @@ final class EnrollmentSeeder extends Seeder
                 'passed_at' => $passedAt,
             ]);
 
+            // 各デモ受講生のEnrollmentに個人目標を1件投入
+            EnrollmentGoal::factory()
+                ->for($enrollment)
+                ->create();
+
+            // 資格の担当コーチに1～2件のメモを投入
+            $coaches = $certification->coaches;
+
+            foreach ($coaches as $coach) {
+                $noteCount = fake()->numberBetween(1, 2);
+
+                EnrollmentNote::factory()
+                    ->count($noteCount)
+                    ->forEnrollment($enrollment)
+                    ->forAuthor($coach)
+                    ->create();
+            }
+
             $this->seedStatusLogs($enrollment, $pattern['state'], $student);
 
             if ($pattern['state'] === 'passed') {
-                $this->issueCertificate($enrollment, $passedAt);
+                $this->issueCertificate($enrollment, $passedAt, $generatePdf);
             }
         }
     }
@@ -244,8 +305,11 @@ final class EnrollmentSeeder extends Seeder
      *
      * 受講生 enrollments.show の「修了済み → PDF DL リンク」と修了証 DL の実機確認用。
      */
-    private function issueCertificate(Enrollment $enrollment, ?Carbon $passedAt): void
-    {
+    private function issueCertificate(
+        Enrollment $enrollment,
+        ?Carbon $passedAt,
+        GeneratePdfAction $generatePdf,
+    ): void {
         if (Certificate::query()->where('enrollment_id', $enrollment->id)->exists()) {
             return;
         }
@@ -255,5 +319,7 @@ final class EnrollmentSeeder extends Seeder
             ->create([
                 'issued_at' => $passedAt ?? now(),
             ]);
+
+        $generatePdf($certificate);
     }
 }
