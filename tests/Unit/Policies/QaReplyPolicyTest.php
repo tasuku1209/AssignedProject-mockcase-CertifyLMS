@@ -89,6 +89,30 @@ class QaReplyPolicyTest extends TestCase
         );
     }
 
+    public function test_assigned_coach_cannot_create_reply_to_thread_of_unpublished_certification(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $coach = User::factory()->coach()->create();
+
+        $certification = Certification::factory()
+            ->draft()
+            ->create();
+
+        $certification->coaches()->attach($coach->id, [
+            'id' => (string) Str::ulid(),
+            'assigned_by_user_id' => $admin->id,
+            'assigned_at' => now(),
+        ]);
+
+        $thread = QaThread::factory()
+            ->forCertification($certification)
+            ->create();
+
+        $this->assertFalse(
+            $this->policy->create($coach, $thread)
+        );
+    }
+
     public function test_admin_cannot_create_reply(): void
     {
         $admin = User::factory()->admin()->create();
