@@ -10,7 +10,9 @@ use App\Models\Meeting;
 use App\Models\User;
 use App\Notifications\MeetingReminderNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Notifications\SendQueuedNotifications;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class SendMeetingRemindersCommandTest extends TestCase
@@ -314,5 +316,29 @@ class SendMeetingRemindersCommandTest extends TestCase
                 '--windowには eve または one_hour_before を指定してください。',
             )
             ->assertExitCode(1);
+    }
+
+    public function test_reminder_notification_is_queued(): void
+    {
+        // Arrange
+        Queue::fake();
+
+        $meeting = Meeting::factory()->create([
+            'scheduled_at' => now()->addDay()->setTime(15, 0),
+            'status' => MeetingStatus::Reserved,
+        ]);
+
+        // Act
+        $this->artisan('notifications:send-meeting-reminders --window=eve')
+            ->assertExitCode(0)
+            ->expectsOutputToContain('1件の対象面談を確認しました。');
+
+        // Assert
+        Queue::assertPushed(
+            SendQueuedNotifications::class,
+            function (SendQueuedNotifications $job): bool {
+                return $job->notification instanceof MeetingReminderNotification;
+            },
+        );
     }
 }
