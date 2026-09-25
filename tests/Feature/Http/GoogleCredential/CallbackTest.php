@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\GoogleCalendarService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 class CallbackTest extends TestCase
@@ -75,6 +76,7 @@ class CallbackTest extends TestCase
         return $token;
     }
 
+    #[Group('external-api')]
     public function test_coach_can_complete_google_oauth_callback(): void
     {
         // Arrange
@@ -101,6 +103,7 @@ class CallbackTest extends TestCase
         ]);
     }
 
+    #[Group('external-api')]
     public function test_successful_callback_redirects_to_availability_settings(): void
     {
         // Arrange
@@ -136,6 +139,7 @@ class CallbackTest extends TestCase
             );
     }
 
+    #[Group('external-api')]
     public function test_invalid_oauth_state_is_rejected(): void
     {
         // Arrange

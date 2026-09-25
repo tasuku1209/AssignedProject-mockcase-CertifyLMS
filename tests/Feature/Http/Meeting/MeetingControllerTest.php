@@ -15,9 +15,11 @@ use App\Models\Meeting;
 use App\Models\User;
 use App\Services\GoogleCalendarService;
 use Carbon\Carbon;
+use Google\Service\Exception as GoogleServiceException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Mockery;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 class MeetingControllerTest extends TestCase
@@ -119,6 +121,7 @@ class MeetingControllerTest extends TestCase
         ]);
     }
 
+    #[Group('external-api')]
     public function test_store_creates_google_calendar_event_for_connected_coach(): void
     {
         $student = User::factory()->student()->inProgress()->create([
@@ -196,6 +199,7 @@ class MeetingControllerTest extends TestCase
         ]);
     }
 
+    #[Group('external-api')]
     public function test_store_does_not_create_google_calendar_event_for_unconnected_coach(): void
     {
         $student = User::factory()->student()->inProgress()->create([
@@ -250,6 +254,7 @@ class MeetingControllerTest extends TestCase
         ]);
     }
 
+    #[Group('external-api')]
     public function test_store_succeeds_when_google_calendar_event_creation_fails(): void
     {
         $student = User::factory()->student()->inProgress()->create([
@@ -359,6 +364,7 @@ class MeetingControllerTest extends TestCase
         $this->assertSame(MeetingStatus::Canceled, $meeting->fresh()->status);
     }
 
+    #[Group('external-api')]
     public function test_cancel_deletes_google_calendar_event_for_connected_coach(): void
     {
         $student = User::factory()->student()->inProgress()->create([
@@ -403,6 +409,7 @@ class MeetingControllerTest extends TestCase
         );
     }
 
+    #[Group('external-api')]
     public function test_cancel_succeeds_when_google_calendar_event_deletion_fails(): void
     {
         $student = User::factory()->student()->inProgress()->create([
@@ -428,6 +435,51 @@ class MeetingControllerTest extends TestCase
         $mock->shouldReceive('deleteEvent')
             ->once()
             ->andThrow(new GoogleOAuthTokenException);
+
+        $this->app->instance(GoogleCalendarService::class, $mock);
+
+        $response = $this->actingAs($student)
+            ->post(route('meetings.cancel', $meeting));
+
+        $response->assertRedirect();
+
+        $this->assertSame(
+            MeetingStatus::Canceled,
+            $meeting->fresh()->status
+        );
+
+        $this->assertDatabaseHas('meetings', [
+            'id' => $meeting->id,
+            'status' => MeetingStatus::Canceled->value,
+        ]);
+    }
+
+    #[Group('external-api')]
+    public function test_cancel_succeeds_when_google_calendar_event_deletion_throws_google_service_exception(): void
+    {
+        $student = User::factory()->student()->inProgress()->create([
+            'max_meetings' => 5,
+        ]);
+        $coach = User::factory()->coach()->create();
+
+        $meeting = Meeting::factory()
+            ->reserved()
+            ->forCoach($coach)
+            ->forStudent($student)
+            ->create([
+                'scheduled_at' => now()->addDays(3)->startOfHour(),
+                'google_event_id' => 'google-event-123',
+            ]);
+
+        GoogleCredential::factory()
+            ->forUser($coach)
+            ->create();
+
+        $mock = Mockery::mock(GoogleCalendarService::class);
+
+        $mock->shouldReceive('deleteEvent')
+            ->once()
+            ->andThrow(new GoogleServiceException('Google Calendar API error'));
 
         $this->app->instance(GoogleCalendarService::class, $mock);
 
