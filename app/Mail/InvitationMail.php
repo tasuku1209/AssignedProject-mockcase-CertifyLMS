@@ -22,14 +22,17 @@ class InvitationMail extends Mailable implements ShouldQueue
      *
      * @var int
      */
-    public int $tries = 5;
+    public int $tries = 3;
 
     /**
      * 失敗後のリトライ待機時間（秒）。
      *
      * @var int
      */
-    public int $backoff = 90;
+    public function backoff(): array
+    {
+        return [10, 180];
+    }
 
     public function __construct(public Invitation $invitation) {}
 

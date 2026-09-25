@@ -15,6 +15,23 @@ class ChatMessageReceivedNotification extends Notification implements ShouldQueu
 {
     use Queueable;
 
+    /**
+     * 最大試行回数。
+     *
+     * @var int
+     */
+    public int $tries = 3;
+
+    /**
+     * 失敗後のリトライ待機時間（秒）。
+     *
+     * @var int
+     */
+    public function backoff(): array
+    {
+        return [10, 180];
+    }
+
     public function __construct(
         private readonly ChatMessage $message,
     ) {}
