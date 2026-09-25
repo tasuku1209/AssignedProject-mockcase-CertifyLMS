@@ -12,7 +12,9 @@ use App\Models\User;
 use App\Notifications\AdminAnnouncementNotification;
 use App\UseCases\Announcement\StoreAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Notifications\SendQueuedNotifications;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class StoreActionTest extends TestCase
@@ -407,5 +409,53 @@ class StoreActionTest extends TestCase
 
         $this->assertSame(0, $fresh->dispatched_count);
         $this->assertNotNull($fresh->dispatched_at);
+    }
+
+    public function test_queues_announcement_notifications_for_all_active_students(): void
+    {
+        // Arrange
+        Queue::fake();
+
+        $admin = User::factory()->admin()->create();
+
+        $inProgressStudent1 = User::factory()
+            ->student()
+            ->inProgress()
+            ->create();
+
+        $inProgressStudent2 = User::factory()
+            ->student()
+            ->inProgress()
+            ->create();
+
+        $graduatedStudent = User::factory()
+            ->student()
+            ->graduated()
+            ->create();
+
+        $validated = [
+            'title' => 'システムメンテナンスのお知らせ',
+            'body' => '明日午前2時からシステムメンテナンスを実施します。',
+            'target_type' => AnnouncementTargetType::AllStudents->value,
+        ];
+
+        // Act
+        $announcement = app(StoreAction::class)(
+            $admin,
+            $validated,
+        );
+
+        // Assert
+        $this->assertSame(
+            2,
+            $announcement->fresh()->dispatched_count,
+        );
+
+        Queue::assertPushed(
+            SendQueuedNotifications::class,
+            function (SendQueuedNotifications $job): bool {
+                return $job->notification instanceof AdminAnnouncementNotification;
+            },
+        );
     }
 }
