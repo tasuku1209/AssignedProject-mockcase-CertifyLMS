@@ -7,14 +7,29 @@ namespace App\Mail;
 use App\Models\Invitation;
 use App\Services\InvitationTokenService;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class InvitationMail extends Mailable
+class InvitationMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
+
+    /**
+     * 最大試行回数。
+     *
+     * @var int
+     */
+    public int $tries = 5;
+
+    /**
+     * 失敗後のリトライ待機時間（秒）。
+     *
+     * @var int
+     */
+    public int $backoff = 90;
 
     public function __construct(public Invitation $invitation) {}
 
