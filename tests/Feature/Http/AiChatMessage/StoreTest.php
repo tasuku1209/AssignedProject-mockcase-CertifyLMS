@@ -11,6 +11,7 @@ use App\Models\Enrollment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 class StoreTest extends TestCase
@@ -35,6 +36,7 @@ class StoreTest extends TestCase
             ->create();
     }
 
+    #[Group('external-api')]
     public function test_student_can_send_message_and_receive_json_response(): void
     {
         Http::fake([
@@ -140,6 +142,7 @@ class StoreTest extends TestCase
         ]);
     }
 
+    #[Group('external-api')]
     public function test_message_sending_is_rejected_when_daily_limit_is_reached(): void
     {
         Http::fake();

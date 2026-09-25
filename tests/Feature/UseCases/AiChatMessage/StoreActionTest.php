@@ -13,6 +13,7 @@ use App\Services\GeminiService;
 use App\UseCases\AiChatMessage\StoreAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Tests\TestCase;
 
@@ -26,6 +27,7 @@ use Tests\TestCase;
  * - Conversationのタイトル・最終メッセージ日時更新
  * - Geminiエラー時のAssistantメッセージをErrorへ更新
  */
+#[Group('external-api')]
 class StoreActionTest extends TestCase
 {
     use RefreshDatabase;

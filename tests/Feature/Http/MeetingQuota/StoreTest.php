@@ -9,10 +9,12 @@ use App\Models\MeetingPack;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use PHPUnit\Framework\Attributes\Group;
 use Stripe\Service\Checkout\SessionService;
 use Stripe\StripeClient;
 use Tests\TestCase;
 
+#[Group('external-api')]
 class StoreTest extends TestCase
 {
     use RefreshDatabase;
