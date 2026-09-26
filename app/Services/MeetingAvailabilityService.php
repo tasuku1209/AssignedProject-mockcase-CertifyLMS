@@ -25,8 +25,13 @@ use Throwable;
  * 各スロットの「予約可能なコーチ数」を返す。
  *
  * 受講生にコーチ個別は提示せず、予約確定時にコーチを自動割当する。
+ *
+ * `final` 不採用: `StoreActionTest::test_throws_when_no_coach_is_available` で
+ * `Mockery::mock(MeetingAvailabilityService::class)` を使って
+ * `validateSlot()` をモックし、コーチ候補が存在しない場合の
+ * `MeetingNoAvailableCoachException` を検証するため。
  */
-final class MeetingAvailabilityService
+class MeetingAvailabilityService
 {
     public function __construct(
         private readonly GoogleCalendarService $googleCalendarService,
