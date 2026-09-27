@@ -8,12 +8,14 @@ use App\Models\User;
 use App\Services\GoogleCalendarService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 class RedirectTest extends TestCase
 {
     use RefreshDatabase;
 
+    #[Group('external-api')]
     public function test_coach_can_redirect_to_google_oauth(): void
     {
         // Arrange

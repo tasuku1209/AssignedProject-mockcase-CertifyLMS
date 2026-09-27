@@ -12,8 +12,10 @@ use App\Models\Payment;
 use App\Models\StripeWebhookEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
+#[Group('external-api')]
 class StripeWebhookTest extends TestCase
 {
     use RefreshDatabase;
@@ -246,6 +248,31 @@ class StripeWebhookTest extends TestCase
         $response = $this->postSignedWebhook(
             $payload['body'],
             'invalid-signature',
+        );
+
+        $response->assertStatus(500);
+
+        $this->assertDatabaseCount('stripe_webhook_events', 0);
+    }
+
+    public function test_missing_signature_is_rejected(): void
+    {
+        $payload = $this->createCheckoutSessionPayload(
+            eventId: 'evt_test_missing_signature',
+            paymentId: null,
+            paymentStatus: 'paid',
+        );
+
+        $response = $this->call(
+            'POST',
+            route('webhooks.stripe'),
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+            ],
+            $payload['body'],
         );
 
         $response->assertStatus(500);

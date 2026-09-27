@@ -7,12 +7,14 @@ namespace Tests\Feature\Http\GoogleCredential;
 use App\Models\GoogleCredential;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 class DestroyTest extends TestCase
 {
     use RefreshDatabase;
 
+    #[Group('external-api')]
     public function test_coach_can_disconnect_google_calendar(): void
     {
         // Arrange
