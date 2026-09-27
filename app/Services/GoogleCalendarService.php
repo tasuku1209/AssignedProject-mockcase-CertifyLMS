@@ -22,12 +22,16 @@ use Illuminate\Support\Str;
  */
 class GoogleCalendarService
 {
+    public function __construct(
+        private readonly GoogleCalendarClientFactory $clientFactory,
+    ) {}
+
     /**
      * Google Calendar OAuth 認証画面のURLを生成する。
      */
     public function createAuthorizationUrl(User $user): string
     {
-        $client = $this->createClient();
+        $client = $this->clientFactory->create();
 
         $state = Str::random(64);
 
@@ -78,7 +82,7 @@ class GoogleCalendarService
      */
     public function fetchAccessToken(string $code): array
     {
-        $client = $this->createClient();
+        $client = $this->clientFactory->create();
 
         $token = $client->fetchAccessTokenWithAuthCode($code);
 
@@ -94,7 +98,7 @@ class GoogleCalendarService
      */
     public function getPrimaryCalendarId(array $token): string
     {
-        $client = $this->createClient();
+        $client = $this->clientFactory->create();
         $client->setAccessToken($token);
 
         $calendarService = new Calendar($client);
@@ -208,7 +212,7 @@ class GoogleCalendarService
     private function createAuthenticatedClient(
         GoogleCredential $credential,
     ): Client {
-        $client = $this->createClient();
+        $client = $this->clientFactory->create();
 
         $client->setAccessToken([
             'access_token' => $credential->access_token,
@@ -237,31 +241,6 @@ class GoogleCalendarService
 
             $client->setAccessToken($token);
         }
-
-        return $client;
-    }
-
-    /**
-     * Google API Client を生成する。
-     */
-    private function createClient(): Client
-    {
-        $client = new Client;
-
-        $client->setClientId(config('services.google.client_id'));
-        $client->setClientSecret(config('services.google.client_secret'));
-        $client->setRedirectUri(
-            route('settings.google-calendar.callback')
-        );
-
-        $client->setScopes([
-            'https://www.googleapis.com/auth/calendar.events.owned',
-            'https://www.googleapis.com/auth/calendar.events.freebusy',
-            'https://www.googleapis.com/auth/calendar.calendars.readonly',
-        ]);
-
-        $client->setAccessType('offline');
-        $client->setPrompt('consent');
 
         return $client;
     }
