@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Unit\Http\Requests\QaThread;
 
 use App\Http\Requests\QaThread\UpdateRequest;
+use App\Models\QaThread;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -78,5 +80,42 @@ class UpdateRequestTest extends TestCase
             'body 未指定で エラー' => ['body', ''],
             'body 5001 文字で エラー' => ['body', str_repeat('b', 5001)],
         ];
+    }
+
+    public function test_authorize_returns_false_when_student_updates_another_students_thread(): void
+    {
+        // Arrange
+        $owner = User::factory()->student()->create();
+        $otherStudent = User::factory()->student()->create();
+
+        $thread = QaThread::factory()
+            ->for($owner, 'user')
+            ->create();
+
+        $request = UpdateRequest::create(
+            route('qa-board.update', $thread),
+            'PATCH',
+        );
+
+        $request->setUserResolver(fn () => $otherStudent);
+
+        $request->setRouteResolver(
+            fn () => new class($thread)
+            {
+                public function __construct(
+                    private QaThread $thread,
+                ) {}
+
+                public function parameter(string $key): ?QaThread
+                {
+                    return $key === 'thread'
+                        ? $this->thread
+                        : null;
+                }
+            }
+        );
+
+        // Act / Assert
+        $this->assertFalse($request->authorize());
     }
 }

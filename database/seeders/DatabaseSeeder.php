@@ -24,14 +24,19 @@ class DatabaseSeeder extends Seeder
             InvitationSeeder::class,
             EnrollmentSeeder::class,
             MentoringSeeder::class,
+            PaymentSeeder::class,
             ContentSeeder::class,
             LearningSeeder::class,
+            AiChatSeeder::class,
             QuizAnsweringSeeder::class,
             MockExamSeeder::class,
             ChatSeeder::class,
             CertificateSeeder::class,
             QaThreadSeeder::class,
             QaReplySeeder::class,
+            AvatarSeeder::class,
+            NotificationSeeder::class,
+            AnnouncementSeeder::class,
         ]);
     }
 }

@@ -20,6 +20,14 @@ final class ShowAction
             'certification.coaches',
             'certificate',
             'latestStatusLog.changedBy',
+        ])->load([
+            'goals' => function ($query) {
+                $query
+                    ->orderByRaw('achieved_at IS NOT NULL')
+                    ->orderByRaw('target_date IS NULL')
+                    ->orderBy('target_date')
+                    ->orderByDesc('created_at');
+            },
         ]);
     }
 }

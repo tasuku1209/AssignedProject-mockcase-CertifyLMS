@@ -42,6 +42,7 @@ class MeetingPackSeeder extends Seeder
                 'description' => 'もう 1 回だけ面談したい方向け。',
                 'meeting_count' => 1,
                 'price' => 3000,
+                'stripe_price_id' => 'price_1UGpMrRte1aTzVLwzTu7thYB',
                 'sort_order' => 10,
             ],
             [
@@ -49,6 +50,7 @@ class MeetingPackSeeder extends Seeder
                 'description' => '本試験前にまとめて相談したい方向け。20% OFF。',
                 'meeting_count' => 5,
                 'price' => 12000,
+                'stripe_price_id' => 'price_1UGpNnRte1aTzVLwATB0BxTg',
                 'sort_order' => 20,
             ],
             [
@@ -56,6 +58,7 @@ class MeetingPackSeeder extends Seeder
                 'description' => '長期サポートが必要な方向け。30% OFF。',
                 'meeting_count' => 10,
                 'price' => 21000,
+                'stripe_price_id' => 'price_1UGpOERte1aTzVLwhJAXaHk4',
                 'sort_order' => 30,
             ],
         ];

@@ -40,6 +40,7 @@ return [
     'digits_between' => ':attribute は :min 桁から :max 桁で指定してください。',
     'email' => ':attribute は有効なメールアドレス形式で入力してください。',
     'ends_with' => ':attribute は次のいずれかで終わる必要があります: :values',
+    'enum' => '選択された :attribute は無効です。',
     'exists' => '選択された :attribute は無効です。',
     'file' => ':attribute はファイルを指定してください。',
     'filled' => ':attribute を入力してください。',

@@ -38,6 +38,9 @@ return new class extends Migration
                 ->nullOnDelete();
             $table->timestamps();
 
+            // 同一コーチの同一時刻への二重予約を DB レベルで禁止
+            $table->unique(['coach_id', 'scheduled_at']);
+
             // 受講生別履歴一覧 / 自動完了 Schedule Command 高速化のための補助 INDEX
             $table->index(['student_id', 'scheduled_at']);
             $table->index(['status', 'scheduled_at']);

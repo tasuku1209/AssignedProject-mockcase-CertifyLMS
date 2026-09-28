@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Enums\UserRole;
 use App\Models\User;
 
 /**
@@ -17,5 +18,29 @@ class MeetingQuotaPolicy
     public function viewHistory(User $auth, User $target): bool
     {
         return $auth->id === $target->id;
+    }
+
+    /**
+     * 追加面談購入画面の閲覧。
+     */
+    public function viewCheckout(User $user): bool
+    {
+        return $user->role === UserRole::Student;
+    }
+
+    /**
+     * 追加面談購入の開始。
+     */
+    public function createCheckout(User $user): bool
+    {
+        return $user->role === UserRole::Student;
+    }
+
+    /**
+     * 購入完了画面の閲覧。
+     */
+    public function viewSuccess(User $user): bool
+    {
+        return $user->role === UserRole::Student;
     }
 }

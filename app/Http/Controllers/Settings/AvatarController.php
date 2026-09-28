@@ -1,0 +1,44 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Settings;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Avatar\StoreRequest;
+use App\UseCases\Avatar\DestroyAction;
+use App\UseCases\Avatar\StoreAction;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+
+class AvatarController extends Controller
+{
+    public function store(
+        StoreRequest $request,
+        StoreAction $action,
+    ): RedirectResponse {
+        $action(
+            $request->user(),
+            $request->file('avatar'),
+        );
+
+        return redirect()
+            ->route('settings.profile.edit')
+            ->with('success', 'アバター画像を更新しました。');
+    }
+
+    public function destroy(
+        Request $request,
+        DestroyAction $action,
+    ): RedirectResponse {
+        $user = $request->user();
+
+        $this->authorize('settings.avatar.delete', $user);
+
+        $action($user);
+
+        return redirect()
+            ->route('settings.profile.edit')
+            ->with('success', 'アイコン画像を削除しました。');
+    }
+}

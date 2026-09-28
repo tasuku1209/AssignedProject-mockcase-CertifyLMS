@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -187,6 +188,14 @@ class User extends Authenticatable
     }
 
     /**
+     * @return HasMany<Payment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
      * @return HasMany<MeetingQuotaTransaction, $this>
      */
     public function meetingQuotaTransactions(): HasMany
@@ -295,6 +304,36 @@ class User extends Authenticatable
     }
 
     /**
+     * 自身が作成した受講登録メモ一覧。
+     *
+     * @return HasMany<EnrollmentNote, $this>
+     */
+    public function enrollmentNotes(): HasMany
+    {
+        return $this->hasMany(EnrollmentNote::class, 'user_id');
+    }
+
+    /**
+     * 自身が所有する AI チャット相談一覧。
+     *
+     * @return HasMany<AiChatConversation, $this>
+     */
+    public function aiChatConversations(): HasMany
+    {
+        return $this->hasMany(AiChatConversation::class);
+    }
+
+    /**
+     * Google Calendar の連携情報。
+     *
+     * @return HasOne<GoogleCredential, $this>
+     */
+    public function googleCredential(): HasOne
+    {
+        return $this->hasOne(GoogleCredential::class);
+    }
+
+    /**
      * Laravel フレームワーク側のシグナル(`Illuminate\Foundation\Auth\User::sendPasswordResetNotification($token)`)
      * との LSP 整合のため、引数に型宣言を付与しない(親クラスが parameter type なしで宣言しているため)。
      *
@@ -311,7 +350,7 @@ class User extends Authenticatable
      */
     public function receivesBroadcastNotificationsOn(): string
     {
-        return 'notifications.'.$this->id;
+        return 'notifications.' . $this->id;
     }
 
     /**

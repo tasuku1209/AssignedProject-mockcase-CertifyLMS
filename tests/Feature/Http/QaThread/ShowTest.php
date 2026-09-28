@@ -37,6 +37,53 @@ class ShowTest extends TestCase
         $response->assertViewHas('thread');
     }
 
+    public function test_replies_are_ordered_by_oldest_created_at(): void
+    {
+        // Arrange
+        $student = User::factory()->student()->create();
+        $certification = Certification::factory()->published()->create();
+
+        $thread = QaThread::factory()
+            ->for($student, 'user')
+            ->for($certification, 'certification')
+            ->create();
+
+        $olderReply = QaReply::factory()
+            ->for($thread, 'qaThread')
+            ->for($student, 'user')
+            ->create([
+                'body' => '古い回答',
+                'created_at' => now()->subDays(2),
+            ]);
+
+        $newerReply = QaReply::factory()
+            ->for($thread, 'qaThread')
+            ->for($student, 'user')
+            ->create([
+                'body' => '新しい回答',
+                'created_at' => now()->subDay(),
+            ]);
+
+        // Act
+        $response = $this->actingAs($student)
+            ->get(route('qa-board.show', $thread));
+
+        // Assert
+        $response->assertOk();
+
+        $replies = $response->viewData('thread')->replies;
+
+        $this->assertSame(
+            $olderReply->id,
+            $replies->first()->id
+        );
+
+        $this->assertSame(
+            $newerReply->id,
+            $replies->last()->id
+        );
+    }
+
     public function test_student_gets_403_on_thread_with_draft_certification(): void
     {
         // Arrange

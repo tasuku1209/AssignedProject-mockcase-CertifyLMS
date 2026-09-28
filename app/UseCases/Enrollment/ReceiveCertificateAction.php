@@ -11,6 +11,7 @@ use App\Models\Certificate;
 use App\Models\Enrollment;
 use App\Services\CompletionEligibilityService;
 use App\Services\EnrollmentStatusChangeService;
+use App\UseCases\Certificate\GeneratePdfAction;
 use App\UseCases\Certificate\IssueAction as IssueCertificateAction;
 use Illuminate\Support\Facades\DB;
 
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\DB;
  * 2. Enrollment を status=passed / passed_at=now() に更新
  * 3. EnrollmentStatusLog 記録(from=learning / to=passed / changed_by=本人 / reason='受講生による修了証受領')
  * 4. IssueCertificateAction を呼んで Certificate 発行
+ * 5. GeneratePdfAction を呼んで修了証 PDF を生成・保存
  *
  * 修了通知は送らない: 本人の操作直後のリダイレクト先画面で修了証 PDF DL リンクを提示するため、別途通知は冗長。
  */
@@ -34,6 +36,7 @@ final class ReceiveCertificateAction
         private readonly CompletionEligibilityService $eligibility,
         private readonly EnrollmentStatusChangeService $statusChanger,
         private readonly IssueCertificateAction $issueCertificate,
+        private readonly GeneratePdfAction $generatePdf,
     ) {}
 
     /**
@@ -65,6 +68,8 @@ final class ReceiveCertificateAction
             );
 
             $certificate = ($this->issueCertificate)($enrollment->refresh());
+
+            ($this->generatePdf)($certificate);
 
             return $certificate;
         });

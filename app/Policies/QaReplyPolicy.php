@@ -26,7 +26,8 @@ class QaReplyPolicy
         }
 
         if ($auth->role === UserRole::Coach) {
-            return $this->assignedCoach($auth, $thread);
+            return $thread->certification?->status === CertificationStatus::Published
+                && $this->assignedCoach($auth, $thread);
         }
 
         return false;

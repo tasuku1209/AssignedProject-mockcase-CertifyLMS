@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Tests\Unit\Services;
 
 use App\Enums\MeetingQuotaTransactionType;
+use App\Models\MeetingPack;
 use App\Models\MeetingQuotaTransaction;
+use App\Models\Payment;
 use App\Models\User;
 use App\Services\MeetingQuotaService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -131,6 +133,54 @@ class MeetingQuotaServiceTest extends TestCase
         // count + select の paginate 2 クエリ + grantedBy Eager Load 1 クエリ程度で済む想定。
         // N+1 が走ると transaction 件数分の追加クエリで 10+ になる。
         $this->assertLessThan(10, count($queries), '想定より多いクエリが発行された(N+1 の可能性)');
+    }
+
+    public function test_history_eager_loads_related_payment_and_meeting_pack(): void
+    {
+        $user = User::factory()->student()->create();
+
+        $meetingPack = MeetingPack::factory()
+            ->published()
+            ->create();
+
+        $payment = Payment::factory()
+            ->for($user)
+            ->forMeetingPack($meetingPack)
+            ->succeeded()
+            ->create();
+
+        $transaction = MeetingQuotaTransaction::factory()
+            ->purchased($payment->quantity, $payment->id)
+            ->state(['user_id' => $user->id])
+            ->create();
+
+        $page = app(MeetingQuotaService::class)->history($user);
+
+        $loadedTransaction = $page->firstWhere('id', $transaction->id);
+
+        $this->assertNotNull($loadedTransaction);
+
+        // relatedPayment が Eager Load されていることを確認。
+        $this->assertTrue(
+            $loadedTransaction->relationLoaded('relatedPayment'),
+            'relatedPayment は Eager Load されているはず',
+        );
+
+        // relatedPayment の先の meetingPack も Eager Load されていることを確認。
+        $this->assertTrue(
+            $loadedTransaction->relatedPayment->relationLoaded('meetingPack'),
+            'relatedPayment.meetingPack は Eager Load されているはず',
+        );
+
+        $this->assertTrue(
+            $loadedTransaction->relatedPayment->is($payment),
+            '関連する Payment が取得されるはず',
+        );
+
+        $this->assertTrue(
+            $loadedTransaction->relatedPayment->meetingPack->is($meetingPack),
+            'Payment に関連する MeetingPack が取得されるはず',
+        );
     }
 
     public function test_history_paginates_at_specified_perpage(): void

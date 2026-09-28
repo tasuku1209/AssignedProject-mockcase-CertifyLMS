@@ -4,20 +4,28 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\Certificate;
+use App\Models\AiChatConversation;
+use App\Models\AiChatMessage;
+use App\Models\Announcement;
 use App\Models\Certification;
 use App\Models\CertificationCategory;
 use App\Models\Chapter;
 use App\Models\ChatRoom;
 use App\Models\CoachAvailability;
 use App\Models\Enrollment;
+use App\Models\EnrollmentNote;
+use App\Models\GoogleCredential;
 use App\Models\Invitation;
 use App\Models\LearningHourTarget;
 use App\Models\LearningSession;
 use App\Models\Meeting;
+use App\Models\MeetingPack;
 use App\Models\MockExam;
 use App\Models\MockExamQuestion;
 use App\Models\MockExamSession;
 use App\Models\Part;
+use App\Models\Plan;
 use App\Models\QaReply;
 use App\Models\QaThread;
 use App\Models\QuestionCategory;
@@ -28,23 +36,32 @@ use App\Models\SectionQuestion;
 use App\Models\SectionQuestionAnswer;
 use App\Models\SectionQuestionAttempt;
 use App\Models\User;
+use App\Policies\CertificatePolicy;
+use App\Policies\AiChatConversationPolicy;
+use App\Policies\AiChatMessagePolicy;
+use App\Policies\AnnouncementPolicy;
 use App\Policies\CertificationCategoryPolicy;
 use App\Policies\CertificationPolicy;
 use App\Policies\ChapterPolicy;
 use App\Policies\ChapterViewPolicy;
 use App\Policies\ChatRoomPolicy;
 use App\Policies\CoachAvailabilityPolicy;
+use App\Policies\EnrollmentNotePolicy;
 use App\Policies\EnrollmentPolicy;
+use App\Policies\GoogleCredentialPolicy;
 use App\Policies\InvitationPolicy;
 use App\Policies\LearningHourTargetPolicy;
 use App\Policies\LearningSessionPolicy;
+use App\Policies\MeetingPackPolicy;
 use App\Policies\MeetingPolicy;
 use App\Policies\MeetingQuotaPolicy;
 use App\Policies\MockExamPolicy;
 use App\Policies\MockExamQuestionPolicy;
 use App\Policies\MockExamSessionPolicy;
+use App\Policies\NotificationPolicy;
 use App\Policies\PartPolicy;
 use App\Policies\PartViewPolicy;
+use App\Policies\PlanPolicy;
 use App\Policies\QaReplyPolicy;
 use App\Policies\QaThreadPolicy;
 use App\Policies\QuestionCategoryPolicy;
@@ -56,9 +73,11 @@ use App\Policies\SectionQuestionAttemptPolicy;
 use App\Policies\SectionQuestionPolicy;
 use App\Policies\SectionQuizPolicy;
 use App\Policies\SectionViewPolicy;
+use App\Policies\SettingsPolicy;
 use App\Policies\UserPolicy;
 use App\Policies\WeakDrillPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
@@ -73,9 +92,12 @@ class AuthServiceProvider extends ServiceProvider
         User::class => UserPolicy::class,
         Certification::class => CertificationPolicy::class,
         CertificationCategory::class => CertificationCategoryPolicy::class,
+        Certificate::class => CertificatePolicy::class,
         Part::class => PartPolicy::class,
         Chapter::class => ChapterPolicy::class,
         ChatRoom::class => ChatRoomPolicy::class,
+        AiChatConversation::class => AiChatConversationPolicy::class,
+        AiChatMessage::class => AiChatMessagePolicy::class,
         Section::class => SectionPolicy::class,
         SectionImage::class => SectionImagePolicy::class,
         SectionQuestion::class => SectionQuestionPolicy::class,
@@ -84,6 +106,7 @@ class AuthServiceProvider extends ServiceProvider
         MockExamQuestion::class => MockExamQuestionPolicy::class,
         MockExamSession::class => MockExamSessionPolicy::class,
         Enrollment::class => EnrollmentPolicy::class,
+        EnrollmentNote::class => EnrollmentNotePolicy::class,
         SectionProgress::class => SectionProgressPolicy::class,
         LearningSession::class => LearningSessionPolicy::class,
         LearningHourTarget::class => LearningHourTargetPolicy::class,
@@ -93,6 +116,11 @@ class AuthServiceProvider extends ServiceProvider
         CoachAvailability::class => CoachAvailabilityPolicy::class,
         QaThread::class => QaThreadPolicy::class,
         QaReply::class => QaReplyPolicy::class,
+        Plan::class => PlanPolicy::class,
+        MeetingPack::class => MeetingPackPolicy::class,
+        DatabaseNotification::class => NotificationPolicy::class,
+        GoogleCredential::class => GoogleCredentialPolicy::class,
+        Announcement::class => AnnouncementPolicy::class,
     ];
 
     /**
@@ -102,6 +130,11 @@ class AuthServiceProvider extends ServiceProvider
     {
         // 面談回数履歴の閲覧は Model に直接紐づかない受講生 Ability として Gate 登録する
         Gate::define('view-meeting-quota-history', [MeetingQuotaPolicy::class, 'viewHistory']);
+
+        // 追加面談購入は Model に直接紐づかない受講生 Ability として Gate 登録する
+        Gate::define('view-meeting-quota-checkout', [MeetingQuotaPolicy::class, 'viewCheckout']);
+        Gate::define('create-meeting-quota-checkout', [MeetingQuotaPolicy::class, 'createCheckout']);
+        Gate::define('view-meeting-quota-success', [MeetingQuotaPolicy::class, 'viewSuccess']);
 
         // 受講生視点の教材閲覧認可: 既存の admin / coach 用 PartPolicy / ChapterPolicy / SectionPolicy が
         // Model::class に auto-bind されているため、別 Gate 名で受講生用 View Policy を登録して両立させる。
@@ -115,5 +148,14 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('quiz.section.view', [SectionQuizPolicy::class, 'view']);
         Gate::define('quiz.weak-drill.view', [WeakDrillPolicy::class, 'view']);
         Gate::define('quiz.answer.create', [SectionQuestionAnswerPolicy::class, 'create']);
+
+        // User モデルには既存の UserPolicy が auto-bind されているため、
+        // ユーザー設定画面の本人操作権限は UserPolicy と分離し、
+        // 別 Gate 名で SettingsPolicy に登録する。
+        Gate::define('settings.profile.view', [SettingsPolicy::class, 'view']);
+        Gate::define('settings.profile.update', [SettingsPolicy::class, 'updateProfile']);
+        Gate::define('settings.avatar.store', [SettingsPolicy::class, 'storeAvatar']);
+        Gate::define('settings.avatar.delete', [SettingsPolicy::class, 'deleteAvatar']);
+        Gate::define('settings.password.update', [SettingsPolicy::class, 'updatePassword']);
     }
 }
