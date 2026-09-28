@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\EnrollmentStatus;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -25,24 +26,11 @@ class EnrollmentStatsService
      */
     public function adminKpi(): array
     {
-        $counts = DB::table('enrollments')
-            ->whereNull('deleted_at')
-            ->selectRaw('status, COUNT(*) as cnt')
-            ->groupBy('status')
-            ->pluck('cnt', 'status')
-            ->all();
-
-        $learning = (int) ($counts[EnrollmentStatus::Learning->value] ?? 0);
-        $passed = (int) ($counts[EnrollmentStatus::Passed->value] ?? 0);
-        $failed = (int) ($counts[EnrollmentStatus::Failed->value] ?? 0);
-
-        return [
-            'learning_count' => $learning,
-            'passed_count' => $passed,
-            'failed_count' => $failed,
-            'total' => $learning + $passed + $failed,
-            'by_certification' => $this->byCertification(),
-        ];
+        return Cache::remember(
+            config('dashboard.admin_kpi_cache_key'),
+            config('dashboard.admin_cache_ttl'),
+            fn (): array => $this->calculateAdminKpi(),
+        );
     }
 
     /**
@@ -76,6 +64,49 @@ class EnrollmentStatsService
      * @return Collection<int, array{certification_id: string, certification_name: string, learning: int, passed: int, failed: int, total: int, completion_rate: float}>
      */
     public function completionRateByCertification(): Collection
+    {
+        return Cache::remember(
+            config('dashboard.admin_completion_rate_cache_key'),
+            config('dashboard.admin_cache_ttl'),
+            fn (): Collection => $this->calculateCompletionRateByCertification(),
+        );
+    }
+
+    /**
+     * 全体 KPI(learning / passed / failed 件数 + 資格別内訳)を返す。
+     *
+     * @return array{learning_count: int, passed_count: int, failed_count: int, total: int, by_certification: array<int, array{certification_id: string, certification_name: string, learning: int, passed: int, failed: int, total: int}>}
+     */
+    private function calculateAdminKpi(): array
+    {
+        $counts = DB::table('enrollments')
+            ->whereNull('deleted_at')
+            ->selectRaw('status, COUNT(*) as cnt')
+            ->groupBy('status')
+            ->pluck('cnt', 'status')
+            ->all();
+
+        $learning = (int) ($counts[EnrollmentStatus::Learning->value] ?? 0);
+        $passed = (int) ($counts[EnrollmentStatus::Passed->value] ?? 0);
+        $failed = (int) ($counts[EnrollmentStatus::Failed->value] ?? 0);
+
+        return [
+            'learning_count' => $learning,
+            'passed_count' => $passed,
+            'failed_count' => $failed,
+            'total' => $learning + $passed + $failed,
+            'by_certification' => $this->byCertification(),
+        ];
+    }
+
+    /**
+     * 資格別の修了率(passed / 全件)を Collection で返す。
+     * 0 件の資格は除外する(0 % 表示は意味がないため)。
+     * 一覧は受講生数(total)の多い順、上位 10 件まで。
+     *
+     * @return Collection<int, array{certification_id: string, certification_name: string, learning: int, passed: int, failed: int, total: int, completion_rate: float}>
+     */
+    private function calculateCompletionRateByCertification(): Collection
     {
         return collect($this->byCertification())
             ->filter(fn (array $row): bool => $row['total'] > 0)
