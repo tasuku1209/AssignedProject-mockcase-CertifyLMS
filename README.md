@@ -109,6 +109,44 @@ http://localhost:8000 にアクセスし、下記の[ログインアカウント
 
 > 本サービスは**招待制**です。公開の会員登録画面はありません。新規ユーザーを作るには、管理者でログイン → ユーザー管理から招待 → Mailpit で招待メールの URL を開く → オンボーディング登録、という流れになります。
 
+## Queue（非同期処理）
+
+通知・メールなどの非同期処理には、Laravel の Database Queue を使用しています。
+
+### Queue Worker の起動
+
+キューに積まれたジョブを処理するには、Laravel Sail のコンテナ内で Queue Worker を起動します。
+
+```bash
+sail artisan queue:work database
+```
+
+開発中は、Worker を起動したターミナルをそのまま実行しておいてください。
+
+### 失敗したジョブの確認と再投入
+
+ジョブは最大3回まで試行され、失敗した場合は `failed_jobs` テーブルに記録されます。
+
+失敗したジョブの一覧は以下で確認できます。
+
+```bash
+sail artisan queue:failed
+```
+
+失敗したジョブを再投入する場合は、対象の ID を指定します。
+
+```bash
+sail artisan queue:retry <ID>
+```
+
+再投入したジョブは、Queue Worker が起動していれば再度処理されます。
+
+すべての失敗ジョブを再投入する場合は、以下を実行します。
+
+```bash
+sail artisan queue:retry all
+```
+
 ## テスト
 
 ```bash
