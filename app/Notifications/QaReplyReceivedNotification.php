@@ -6,13 +6,31 @@ namespace App\Notifications;
 
 use App\Models\QaReply;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class QaReplyReceivedNotification extends Notification
+class QaReplyReceivedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
+
+    /**
+     * 最大試行回数。
+     *
+     * @var int
+     */
+    public int $tries = 3;
+
+    /**
+     * 失敗後のリトライ待機時間（秒）。
+     *
+     * @var int
+     */
+    public function backoff(): array
+    {
+        return [10, 180];
+    }
 
     public function __construct(
         private readonly QaReply $reply,

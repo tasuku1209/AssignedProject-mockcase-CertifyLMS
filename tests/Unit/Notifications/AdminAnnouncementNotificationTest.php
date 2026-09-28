@@ -41,6 +41,22 @@ class AdminAnnouncementNotificationTest extends TestCase
         );
     }
 
+    public function test_retry_configuration_returns_three_attempts_and_progressive_backoff(): void
+    {
+        // Arrange
+        $notification = new AdminAnnouncementNotification(
+            Announcement::factory()->make(),
+        );
+
+        // Act
+        $tries = $notification->tries;
+        $backoff = $notification->backoff();
+
+        // Assert
+        $this->assertSame(3, $tries);
+        $this->assertSame([10, 180], $backoff);
+    }
+
     public function test_to_array_returns_expected_data(): void
     {
         // Arrange

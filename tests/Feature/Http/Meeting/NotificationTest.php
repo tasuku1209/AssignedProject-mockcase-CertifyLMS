@@ -14,7 +14,9 @@ use App\Notifications\MeetingCanceledNotification;
 use App\Notifications\MeetingReservedNotification;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Notifications\SendQueuedNotifications;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -153,6 +155,64 @@ class NotificationTest extends TestCase
         Notification::assertNotSentTo(
             $coach,
             MeetingReservedNotification::class,
+        );
+    }
+
+    public function test_store_queues_reserved_notification_after_transaction_commits(): void
+    {
+        // Arrange
+        Queue::fake();
+
+        $student = User::factory()
+            ->student()
+            ->inProgress()
+            ->create(['max_meetings' => 3]);
+
+        $admin = User::factory()->admin()->create();
+
+        $coach = User::factory()
+            ->coach()
+            ->inProgress()
+            ->create();
+
+        $certification = Certification::factory()
+            ->published()
+            ->create();
+
+        $this->attachCoach($certification, $coach, $admin);
+
+        CoachAvailability::factory()
+            ->forCoach($coach)
+            ->onDay(1)
+            ->timeRange('09:00:00', '18:00:00')
+            ->create();
+
+        $enrollment = Enrollment::factory()
+            ->for($student, 'user')
+            ->for($certification)
+            ->learning()
+            ->create();
+
+        $scheduledAt = now()
+            ->startOfDay()
+            ->next(Carbon::MONDAY)
+            ->setTime(10, 0);
+
+        // Act
+        $response = $this->actingAs($student)
+            ->post(route('meetings.store', $enrollment), [
+                'scheduled_at' => $scheduledAt->format('Y-m-d\TH:i:s'),
+                'topic' => 'キュー送信のテストです。',
+            ]);
+
+        // Assert
+        $response->assertRedirect();
+
+        Queue::assertPushed(
+            SendQueuedNotifications::class,
+            function (SendQueuedNotifications $job): bool {
+                return $job->notification instanceof MeetingReservedNotification;
+            },
         );
     }
 
@@ -484,6 +544,66 @@ class NotificationTest extends TestCase
         Notification::assertNotSentTo(
             $coach,
             MeetingCanceledNotification::class,
+        );
+    }
+
+    public function test_cancel_queues_canceled_notification_after_transaction_commits(): void
+    {
+        // Arrange
+        Queue::fake();
+
+        $student = User::factory()
+            ->student()
+            ->inProgress()
+            ->create(['max_meetings' => 3]);
+
+        $admin = User::factory()->admin()->create();
+
+        $coach = User::factory()
+            ->coach()
+            ->inProgress()
+            ->create();
+
+        $certification = Certification::factory()
+            ->published()
+            ->create();
+
+        $this->attachCoach($certification, $coach, $admin);
+
+        $enrollment = Enrollment::factory()
+            ->for($student, 'user')
+            ->for($certification)
+            ->learning()
+            ->create();
+
+        $meeting = Meeting::factory()
+            ->reserved()
+            ->forEnrollment($enrollment)
+            ->forStudent($student)
+            ->forCoach($coach)
+            ->create([
+                'scheduled_at' => now()->addDay(),
+            ]);
+
+        // Act
+        $response = $this->actingAs($student)
+            ->post(route('meetings.cancel', $meeting));
+
+        // Assert
+        $response->assertRedirect();
+
+        $meeting->refresh();
+
+        $this->assertSame(
+            MeetingStatus::Canceled,
+            $meeting->status,
+        );
+
+        Queue::assertPushed(
+            SendQueuedNotifications::class,
+            function (SendQueuedNotifications $job): bool {
+                return $job->notification instanceof MeetingCanceledNotification;
+            },
         );
     }
 }
