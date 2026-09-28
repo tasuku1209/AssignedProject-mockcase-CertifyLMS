@@ -350,7 +350,7 @@ class User extends Authenticatable
      */
     public function receivesBroadcastNotificationsOn(): string
     {
-        return 'notifications.' . $this->id;
+        return 'notifications.'.$this->id;
     }
 
     /**
