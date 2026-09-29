@@ -4,6 +4,16 @@
 
 > プロジェクト構造・ドメインモデル・コードの読み進め方は [ONBOARDING.md](./ONBOARDING.md) を参照してください。
 
+> **仕様について**
+>
+> 各チケットの要件書に加えて、コーチ面談（クライアントヒアリング）で確定した仕様があります。
+>
+> 要件書に記載されていない仕様は、以下のスプレッドシートを参照してください。
+>
+> **仕様一覧（コーチ面談・ヒアリング確定事項）**
+>
+> [スプレッドシートへのリンク](https://docs.google.com/spreadsheets/d/1vvxAVAKWqg2aJoOFiqYQGiUnq8kDpTwKas8GoW1_sRs/edit?gid=576445355#gid=576445355)
+
 ## 主な機能
 
 | ロール | 機能 |
@@ -149,9 +159,12 @@ sail artisan queue:retry all
 
 ## テスト
 
+テストを実行する前に、[環境変数](#環境変数) の設定を完了してください。
+
 ```bash
 sail artisan test                  # 全テスト実行
 sail artisan test --filter=Xxx    # クラス名・メソッド名で絞り込み
+sail artisan test --group=external-api    # 外部API関連テストのみ実行
 ```
 
 ## コード整形
@@ -172,6 +185,9 @@ sail bin pint --test     # 整形漏れの確認（CI 相当のチェック）
 - PHPUnit / Laravel Pint
 - league/commonmark（教材本文の Markdown レンダリング）
 - Pusher（チャットのリアルタイム配信）
+- Google Calendar API（面談予約連携）
+- Gemini API（AI チャット）
+- Stripe（面談回数追加購入）
 - Docker（Laravel Sail）
 
 ## 環境変数
